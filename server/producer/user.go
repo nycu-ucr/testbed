@@ -10,7 +10,7 @@ import (
 func HandleGetUser(request *httpwrapper.Request) *httpwrapper.Response {
 	id := request.Params["id"]
 
-	userInfo, problemDetails := UserInformationProcedure(id)
+	userInfo, problemDetails := GetUserInformationProcedure(id)
 	if problemDetails != nil {
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
@@ -18,7 +18,7 @@ func HandleGetUser(request *httpwrapper.Request) *httpwrapper.Response {
 	}
 }
 
-func UserInformationProcedure(id string) (context.Users, *httpwrapper.ProblemDetails) {
+func GetUserInformationProcedure(id string) (context.Users, *httpwrapper.ProblemDetails) {
 	var users context.Users
 
 	if id != "" {
@@ -80,4 +80,32 @@ func HandleDeleteUser(request *httpwrapper.Request) *httpwrapper.Response {
 		}
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
+}
+
+func HandlePutUser(user *context.User) *httpwrapper.Response {
+
+	problemDetails := UpdateUserInformationProcedure(user)
+	if problemDetails != nil {
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+	} else {
+		return httpwrapper.NewResponse(http.StatusOK, nil, "Update user context success")
+	}
+}
+
+func UpdateUserInformationProcedure(user *context.User) *httpwrapper.ProblemDetails {
+	id := user.Id
+
+	if curUser, ok := context.UserFindById(id); ok {
+		logger.ServerLog.Infof("Update user:\n%+v\nto\n%+v", curUser, user)
+		context.AddUserToUserPool(user)
+	} else {
+		logger.ServerLog.Warnf("Can't update, user with Id=%s not found", id)
+		problemDetails := &httpwrapper.ProblemDetails{
+			Status: http.StatusNotFound,
+			Cause:  "CONTEXT_NOT_FOUND",
+		}
+		return problemDetails
+	}
+
+	return nil
 }

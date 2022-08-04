@@ -43,7 +43,18 @@ func PostUser(c *gin.Context) {
 // Update the user information
 func PutUser(c *gin.Context) {
 	logger.ServerLog.Info("Handle PutUser")
-	c.JSON(http.StatusOK, gin.H{})
+
+	user := context.User{}
+	err := c.ShouldBindJSON(&user)
+
+	if err != nil {
+		logger.ServerLog.Errorf("Error: %+v", err)
+		c.JSON(http.StatusNotAcceptable, "Error : "+err.Error())
+		return
+	} else {
+		rsp := producer.HandlePutUser(&user)
+		c.JSON(http.StatusOK, rsp)
+	}
 }
 
 // Delete the user
