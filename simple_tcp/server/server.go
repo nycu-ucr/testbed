@@ -3,23 +3,36 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
 	"strconv"
+	"time"
+
+	"github.com/nycu-ucr/onvmpoller"
 )
 
 const (
-	addr = ""
+	addr = "127.0.0.1"
 	port = 8000
 )
 
 func main() {
-
 	src := addr + ":" + strconv.Itoa(port)
+	ID, _ := onvmpoller.IpToID(addr)
+	fmt.Println(ID)
+
 	listener, err := net.Listen("tcp", src)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 	defer listener.Close()
 	fmt.Printf("TCP server start and listening on %s.\n", src)
+
+	// // /* NF stop signal */
+	go func() {
+		time.Sleep(10 * time.Second)
+		onvmpoller.CloseONVM()
+		os.Exit(1)
+	}()
 
 	for {
 		conn, err := listener.Accept()

@@ -6,7 +6,6 @@ import (
 )
 
 func main() {
-
 	res, err := sendTCP("127.0.0.1:8000", "hi")
 	if err != nil {
 		fmt.Println(err.Error())
