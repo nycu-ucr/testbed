@@ -1,35 +1,35 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"strconv"
+	"testbed/logger"
 	"time"
 
 	"github.com/nycu-ucr/onvmpoller"
 )
 
 const (
-	addr = "127.0.0.1"
+	addr = "127.0.0.2"
 	port = 8000
 )
 
 func main() {
 	src := addr + ":" + strconv.Itoa(port)
 	ID, _ := onvmpoller.IpToID(addr)
-	fmt.Println(ID)
+	logger.Log.Infof("[ONVM ID]: %d", ID)
 
-	listener, err := net.Listen("tcp", src)
+	listener, err := onvmpoller.ListenONVM("onvm", src)
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Log.Errorln(err.Error())
 	}
 	defer listener.Close()
-	fmt.Printf("TCP server start and listening on %s.\n", src)
+	logger.Log.Infof("TCP server start and listening on %s", src)
 
-	// // /* NF stop signal */
+	/* NF stop signal */
 	go func() {
-		time.Sleep(10 * time.Second)
+		time.Sleep(30 * time.Second)
 		onvmpoller.CloseONVM()
 		os.Exit(1)
 	}()
@@ -37,7 +37,7 @@ func main() {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Printf("Some connection error: %s\n", err)
+			logger.Log.Errorf("Some connection error: %s\n", err)
 		}
 
 		go handleConnection(conn)
@@ -46,7 +46,7 @@ func main() {
 
 func handleConnection(conn net.Conn) {
 	remoteAddr := conn.RemoteAddr().String()
-	fmt.Println("Client connected from: " + remoteAddr)
+	logger.Log.Infof("Client connected from: " + remoteAddr)
 
 	// Make a buffer to hold incoming data.
 	buf := make([]byte, 1024)
@@ -56,17 +56,17 @@ func handleConnection(conn net.Conn) {
 		if err != nil {
 
 			if err.Error() == "EOF" {
-				fmt.Println("Disconned from ", remoteAddr)
+				logger.Log.Infof("Disconned from ", remoteAddr)
 				break
 			} else {
-				fmt.Println("Error reading:", err.Error())
+				logger.Log.Errorf("Error reading:", err.Error())
 				break
 			}
 		}
 		// Send a response back to person contacting us.
 		conn.Write([]byte("Message received.\n"))
 
-		fmt.Printf("len: %d, recv: %s\n", reqLen, string(buf[:reqLen]))
+		logger.Log.Infof("len: %d, recv: %s\n", reqLen, string(buf[:reqLen]))
 	}
 	// Close the connection when you're done with it.
 	conn.Close()

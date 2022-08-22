@@ -1,22 +1,37 @@
 package main
 
 import (
-	"fmt"
-	"net"
+	"os"
+	"testbed/logger"
+	"time"
+
+	"github.com/nycu-ucr/onvmpoller"
+)
+
+const (
+	addr = "127.0.0.1"
+	port = 6000
 )
 
 func main() {
-	res, err := sendTCP("127.0.0.1:8000", "hi")
+	ID, _ := onvmpoller.IpToID(addr)
+	logger.Log.Infof("[ONVM ID]: %d", ID)
+
+	res, err := sendTCP("127.0.0.2:8000", "HA HA is me")
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Log.Errorln(err.Error())
 	} else {
-		fmt.Println(res)
+		logger.Log.Infof("Recv response: %+v", res)
 	}
+
+	time.Sleep(30 * time.Second)
+	onvmpoller.CloseONVM()
+	os.Exit(1)
 }
 
 func sendTCP(addr, msg string) (string, error) {
 	// connect to this socket
-	conn, err := net.Dial("tcp", addr)
+	conn, err := onvmpoller.DialONVM("onvm", addr)
 	if err != nil {
 		return "", err
 	}
