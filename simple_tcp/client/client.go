@@ -14,6 +14,13 @@ const (
 )
 
 func main() {
+	/* NF stop signal */
+	go func() {
+		time.Sleep(60 * time.Second)
+		onvmpoller.CloseONVM()
+		os.Exit(1)
+	}()
+
 	ID, _ := onvmpoller.IpToID(addr)
 	logger.Log.Infof("[ONVM ID]: %d", ID)
 

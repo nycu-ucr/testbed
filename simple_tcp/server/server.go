@@ -16,6 +16,13 @@ const (
 )
 
 func main() {
+	/* NF stop signal */
+	go func() {
+		time.Sleep(60 * time.Second)
+		onvmpoller.CloseONVM()
+		os.Exit(1)
+	}()
+
 	src := addr + ":" + strconv.Itoa(port)
 	ID, _ := onvmpoller.IpToID(addr)
 	logger.Log.Infof("[ONVM ID]: %d", ID)
@@ -26,13 +33,6 @@ func main() {
 	}
 	defer listener.Close()
 	logger.Log.Infof("TCP server start and listening on %s", src)
-
-	/* NF stop signal */
-	go func() {
-		time.Sleep(30 * time.Second)
-		onvmpoller.CloseONVM()
-		os.Exit(1)
-	}()
 
 	for {
 		conn, err := listener.Accept()
