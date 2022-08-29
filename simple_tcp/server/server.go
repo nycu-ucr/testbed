@@ -62,11 +62,13 @@ func handleConnection(conn net.Conn) {
 				logger.Log.Errorf("Error reading:", err.Error())
 				break
 			}
-		}
-		// Send a response back to person contacting us.
-		conn.Write([]byte("Message received.\n"))
+		} else {
+			// Send a response back to person contacting us.
+			conn.Write([]byte("Message received.\n"))
 
-		logger.Log.Infof("len: %d, recv: %s\n", reqLen, string(buf[:reqLen]))
+			logger.Log.Infof("len: %d, recv: %s\n", reqLen, string(buf[:reqLen]))
+		}
+
 	}
 	// Close the connection when you're done with it.
 	conn.Close()
