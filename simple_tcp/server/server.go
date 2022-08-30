@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -22,6 +23,7 @@ func main() {
 		onvmpoller.CloseONVM()
 		os.Exit(1)
 	}()
+	defer onvmpoller.CloseONVM()
 
 	src := addr + ":" + strconv.Itoa(port)
 	ID, _ := onvmpoller.IpToID(addr)
@@ -56,7 +58,7 @@ func handleConnection(conn net.Conn) {
 		if err != nil {
 
 			if err.Error() == "EOF" {
-				logger.Log.Infof("Disconned from ", remoteAddr)
+				logger.Log.Infof("Disconned from: %s", remoteAddr)
 				break
 			} else {
 				logger.Log.Errorf("Error reading:", err.Error())
@@ -64,10 +66,12 @@ func handleConnection(conn net.Conn) {
 			}
 		}
 		// Send a response back to person contacting us.
-		conn.Write([]byte("Message received.\n"))
+		msg := fmt.Sprintf("Message received: %s\n", string(buf[:reqLen]))
+		conn.Write([]byte(msg))
 
 		logger.Log.Infof("len: %d, recv: %s\n", reqLen, string(buf[:reqLen]))
 	}
+	logger.Log.Infof("Client close connection")
 	// Close the connection when you're done with it.
 	conn.Close()
 }
