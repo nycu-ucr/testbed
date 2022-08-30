@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"sync"
+	"net"
+	"strconv"
 	"testbed/logger"
 	"time"
 
@@ -11,64 +11,107 @@ import (
 )
 
 const (
-	addr       = "127.0.0.1"
-	port       = 6000
-	CLIENT_NUM = 10
+	addr = "127.0.0.1"
+	port = 8000
 )
 
 func main() {
 	/* NF stop signal */
-	go func() {
-		time.Sleep(60 * time.Second)
-		onvmpoller.CloseONVM()
-		os.Exit(1)
-	}()
-	defer onvmpoller.CloseONVM()
 
+	server_chan := make(chan bool)
+	client_chan := make(chan bool)
+
+	go server(server_chan)
+	go client(client_chan)
+
+	<-client_chan
+	<-server_chan
+
+	logger.Log.Infoln("After 10 second, shutdown the process")
+	time.Sleep(10 * time.Second)
+	onvmpoller.CloseONVM()
+}
+
+func server(server_chan chan bool) {
+	src := addr + ":" + strconv.Itoa(port)
 	ID, _ := onvmpoller.IpToID(addr)
 	logger.Log.Infof("[ONVM ID]: %d", ID)
 
-	/* Wait all client finish */
-	wg := new(sync.WaitGroup)
-	wg.Add(CLIENT_NUM)
-
-	for i := 1; i <= CLIENT_NUM; i++ {
-		go client(i, wg)
-		time.Sleep(1 * time.Millisecond)
-	}
-	wg.Wait()
-}
-
-func client(num int, wg *sync.WaitGroup) {
-	defer wg.Done()
-	msg := fmt.Sprintf("This is client%d", num)
-	res, err := sendTCP("127.0.0.2:8000", msg)
+	listener, err := onvmpoller.ListenONVM("onvm", src)
 	if err != nil {
 		logger.Log.Errorln(err.Error())
-	} else {
-		logger.Log.Infof("Recv response: %+v", res)
 	}
-	time.Sleep(10 * time.Second)
+	defer listener.Close()
+	logger.Log.Infof("TCP server start and listening on %s", src)
+
+	// Handle single connection
+	conn, err := listener.Accept()
+	if err != nil {
+		logger.Log.Errorf("Some connection error: %s\n", err)
+	}
+
+	handleConnection(conn)
+
+	server_chan <- true
 }
 
-func sendTCP(addr, msg string) (string, error) {
-	// connect to this socket
-	conn, err := onvmpoller.DialONVM("onvm", addr)
-	if err != nil {
-		return "", err
+func handleConnection(conn net.Conn) {
+	remoteAddr := conn.RemoteAddr().String()
+	logger.Log.Infof("Client connected from: " + remoteAddr)
+
+	// Make a buffer to hold incoming data.
+	buf := make([]byte, 1024)
+	for {
+		// Read the incoming connection into the buffer.
+		reqLen, err := conn.Read(buf)
+		if err != nil {
+
+			if err.Error() == "EOF" {
+				logger.Log.Infof("Disconned from: %s", remoteAddr)
+				break
+			} else {
+				logger.Log.Errorf("Error reading:", err.Error())
+				break
+			}
+		} else {
+			// Send a response back to person contacting us.
+			msg := fmt.Sprintf("Message received: %s\n", string(buf[:reqLen]))
+			conn.Write([]byte(msg))
+
+			logger.Log.Infof("len: %d, recv: %s\n", reqLen, string(buf[:reqLen]))
+		}
 	}
-	defer conn.Close()
+	logger.Log.Infof("Client close connection")
+	// Close the connection when you're done with it.
+	conn.Close()
+}
 
-	// send to socket
-	conn.Write([]byte(msg))
-
-	// listen for reply
-	bs := make([]byte, 1024)
-	len, err := conn.Read(bs)
+func client(client_chan chan bool) {
+	time.Sleep(6 * time.Second)
+	conn, err := onvmpoller.DialONVM("onvm", "127.0.0.11:8000")
+	msg_count := 5
+	msg := ""
+	buf := make([]byte, 256)
+	prefix := "\u001b[33m[I'm client]\u001b[0m"
 
 	if err != nil {
-		return "", err
-	} else {
-		return string(bs[:len]), err
+		logger.Log.Errorln(err.Error())
 	}
+
+	for i := 0; i < msg_count; i++ {
+		msg = fmt.Sprintf("%s Message %v", prefix, i+1)
+		conn.Write([]byte(msg))
+
+		_, err := conn.Read(buf)
+		if err != nil {
+			if err.Error() == "EOF" {
+				logger.Log.Infoln("Peer close connection")
+				break
+			}
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	conn.Close()
+	client_chan <- true
 }
