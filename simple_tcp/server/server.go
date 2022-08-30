@@ -3,12 +3,8 @@ package main
 import (
 	"fmt"
 	"net"
-	"os"
 	"strconv"
 	"testbed/logger"
-	"time"
-
-	"github.com/nycu-ucr/onvmpoller"
 )
 
 const (
@@ -17,19 +13,23 @@ const (
 )
 
 func main() {
-	/* NF stop signal */
-	go func() {
-		time.Sleep(60 * time.Second)
-		onvmpoller.CloseONVM()
-		os.Exit(1)
-	}()
-	defer onvmpoller.CloseONVM()
-
+	var listener net.Listener
+	var err error
 	src := addr + ":" + strconv.Itoa(port)
-	ID, _ := onvmpoller.IpToID(addr)
-	logger.Log.Infof("[ONVM ID]: %d", ID)
 
-	listener, err := onvmpoller.ListenONVM("onvm", src)
+	/* NF stop signal */
+	// go func() {
+	// 	time.Sleep(60 * time.Second)
+	// 	onvmpoller.CloseONVM()
+	// 	os.Exit(1)
+	// }()
+	// defer onvmpoller.CloseONVM()
+	// ID, _ := onvmpoller.IpToID(addr)
+	// logger.Log.Infof("[ONVM ID]: %d", ID)
+	// listener, err = onvmpoller.ListenONVM("onvm", src)
+
+	listener, err = net.Listen("tcp", src)
+
 	if err != nil {
 		logger.Log.Errorln(err.Error())
 	}
@@ -66,7 +66,7 @@ func handleConnection(conn net.Conn) {
 			}
 		} else {
 			// Send a response back to person contacting us.
-			msg := fmt.Sprintf("Message received: %s\n", string(buf[:reqLen]))
+			msg := fmt.Sprintf("[Server]%s", string(buf[:reqLen]))
 			conn.Write([]byte(msg))
 
 			logger.Log.Infof("len: %d, recv: %s\n", reqLen, string(buf[:reqLen]))

@@ -2,69 +2,114 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"net"
 	"sync"
 	"testbed/logger"
 	"time"
-
-	"github.com/nycu-ucr/onvmpoller"
 )
 
 const (
 	addr       = "127.0.0.1"
 	port       = 6000
-	CLIENT_NUM = 10
+	CLIENT_NUM = 100
 )
 
 func main() {
 	/* NF stop signal */
-	go func() {
-		time.Sleep(60 * time.Second)
-		onvmpoller.CloseONVM()
-		os.Exit(1)
-	}()
-	defer onvmpoller.CloseONVM()
+	// go func() {
+	// 	time.Sleep(60 * time.Second)
+	// 	onvmpoller.CloseONVM()
+	// 	os.Exit(1)
+	// }()
+	// defer onvmpoller.CloseONVM()
 
-	ID, _ := onvmpoller.IpToID(addr)
-	logger.Log.Infof("[ONVM ID]: %d", ID)
+	// ID, _ := onvmpoller.IpToID(addr)
+	// logger.Log.Infof("[ONVM ID]: %d", ID)
+	// onvmpoller.SetLocalAddress(addr)
 
 	/* Wait all client finish */
 	wg := new(sync.WaitGroup)
-	wg.Add(CLIENT_NUM)
+	wg.Add(CLIENT_NUM + 1)
 
+	performance := make(chan float64, 10)
+	go calculate(wg, performance)
+
+	time.Sleep(5 * time.Second)
 	for i := 1; i <= CLIENT_NUM; i++ {
-		go client(i, wg)
-		time.Sleep(1 * time.Millisecond)
+		go client(i, wg, performance)
+		// time.Sleep(1 * time.Millisecond)
 	}
 	wg.Wait()
+	time.Sleep(30 * time.Second)
 }
 
-func client(num int, wg *sync.WaitGroup) {
+func calculate(wg *sync.WaitGroup, performance chan float64) {
+	var (
+		count  int
+		result float64
+	)
 	defer wg.Done()
-	msg := fmt.Sprintf("This is client%d", num)
+	count = 0
+	result = 0
+
+	for {
+		select {
+		case p := <-performance:
+			count++
+			result = result + p
+		default:
+		}
+
+		if count == CLIENT_NUM {
+			break
+		}
+	}
+
+	logger.Log.Infof("Average time: %f", result/float64(count))
+}
+
+func client(num int, wg *sync.WaitGroup, performance chan float64) {
+	defer wg.Done()
+	msg := fmt.Sprintf("[Client + Conn_%d]", num)
+
+	t1 := time.Now()
 	res, err := sendTCP("127.0.0.2:8000", msg)
+	t2 := time.Now()
+
+	t := t2.Sub(t1).Seconds() * 1000
+	performance <- t
+
 	if err != nil {
 		logger.Log.Errorln(err.Error())
 	} else {
-		logger.Log.Infof("Recv response: %+v", res)
+		logger.Log.Infof("[Conn_%d] Recv response: %+v", num, res)
 	}
-	time.Sleep(10 * time.Second)
 }
 
 func sendTCP(addr, msg string) (string, error) {
 	// connect to this socket
-	conn, err := onvmpoller.DialONVM("onvm", addr)
+	var conn net.Conn
+	var err error
+
+	conn, err = net.Dial("tcp", addr)
+	// conn, err = onvmpoller.DialONVM("onvm", addr)
+
 	if err != nil {
 		return "", err
 	}
+
 	defer conn.Close()
 
-	// send to socket
-	conn.Write([]byte(msg))
-
-	// listen for reply
 	bs := make([]byte, 1024)
+
+	t1 := time.Now()
+	conn.Write([]byte(msg))
+	t2 := time.Now()
 	len, err := conn.Read(bs)
+	t3 := time.Now()
+	tW := t2.Sub(t1).Seconds() * 1000
+	tR := t3.Sub(t2).Seconds() * 1000
+	logger.Log.Infof("[Delay] Write=%f, Read=%f", tW, tR)
 
 	if err != nil {
 		return "", err
