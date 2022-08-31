@@ -73,20 +73,21 @@ func client(num int, wg *sync.WaitGroup, performance chan float64) {
 	msg := fmt.Sprintf("[Client + Conn_%d]", num)
 
 	t1 := time.Now()
-	res, err := sendTCP("127.0.0.2:8000", msg)
+	_, tW, tR, err := sendTCP("127.0.0.2:8000", msg)
 	t2 := time.Now()
 
 	t := t2.Sub(t1).Seconds() * 1000
 	performance <- t
+	logger.Log.Infof("[Delay] Write=%f, Read=%f", tW, tR)
 
 	if err != nil {
 		logger.Log.Errorln(err.Error())
 	} else {
-		logger.Log.Infof("[Conn_%d] Recv response: %+v", num, res)
+		// logger.Log.Infof("[Conn_%d] Recv response: %+v", num, res)
 	}
 }
 
-func sendTCP(addr, msg string) (string, error) {
+func sendTCP(addr, msg string) (string, float64, float64, error) {
 	// connect to this socket
 	var conn net.Conn
 	var err error
@@ -95,7 +96,7 @@ func sendTCP(addr, msg string) (string, error) {
 	// conn, err = onvmpoller.DialONVM("onvm", addr)
 
 	if err != nil {
-		return "", err
+		return "", 0.0, 0.0, err
 	}
 
 	defer conn.Close()
@@ -105,15 +106,14 @@ func sendTCP(addr, msg string) (string, error) {
 	t1 := time.Now()
 	conn.Write([]byte(msg))
 	t2 := time.Now()
-	len, err := conn.Read(bs)
+	length, err := conn.Read(bs)
 	t3 := time.Now()
 	tW := t2.Sub(t1).Seconds() * 1000
 	tR := t3.Sub(t2).Seconds() * 1000
-	logger.Log.Infof("[Delay] Write=%f, Read=%f", tW, tR)
 
 	if err != nil {
-		return "", err
+		return "", tW, tR, err
 	} else {
-		return string(bs[:len]), err
+		return string(bs[:length]), tW, tR, err
 	}
 }
