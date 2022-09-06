@@ -14,7 +14,7 @@ import (
 const (
 	addr       = "127.0.0.1"
 	port       = 6000
-	CLIENT_NUM = 200
+	CLIENT_NUM = 100
 )
 
 func main() {
@@ -31,26 +31,102 @@ func main() {
 	onvmpoller.SetLocalAddress(addr)
 
 	/* Wait all client finish */
-	wg := new(sync.WaitGroup)
-	wg.Add(CLIENT_NUM + 3)
+	wg_conn, wg_worker := new(sync.WaitGroup), new(sync.WaitGroup)
+	wg_conn.Add(CLIENT_NUM)
+	wg_worker.Add(5)
 
 	performance := make(chan float64, 10)
 	performanceWrite := make(chan float64, 10)
 	performanceRead := make(chan float64, 10)
-	go calculateRead(wg, performanceWrite)
-	go calculateWrite(wg, performanceRead)
-	go calculate(wg, performance)
+	performanceCreate := make(chan float64, 10)
+	performanceClose := make(chan float64, 10)
 
-	time.Sleep(5 * time.Second)
+	go calculate(wg_worker, performance)
+	go calculateCreate(wg_worker, performanceCreate, performance)
+	go calculateRead(wg_worker, performanceRead, performance)
+	go calculateWrite(wg_worker, performanceWrite, performance)
+	go calculateClose(wg_worker, performanceClose, performance)
+
+	conns := [CLIENT_NUM + 1]net.Conn{}
+
+	time.Sleep(3 * time.Second)
 	for i := 1; i <= CLIENT_NUM; i++ {
-		go client(i, wg, performance, performanceRead, performanceWrite)
-		// time.Sleep(1 * time.Millisecond)
+		go create_connection(wg_conn, performanceCreate, &conns, i)
 	}
-	wg.Wait()
+	wg_conn.Wait()
+	wg_conn.Add(CLIENT_NUM)
+
+	time.Sleep(1 * time.Second)
+	for i := 1; i <= CLIENT_NUM; i++ {
+		go write_and_read(wg_conn, performanceRead, performanceWrite, i, conns[i])
+	}
+	wg_conn.Wait()
+	wg_conn.Add(CLIENT_NUM)
+
+	time.Sleep(1 * time.Second)
+	for i := 1; i <= CLIENT_NUM; i++ {
+		go close_connection(wg_conn, performanceClose, conns[i])
+	}
+	wg_conn.Wait()
+
+	wg_worker.Wait()
 	time.Sleep(30 * time.Second)
 }
 
-func calculate(wg *sync.WaitGroup, performance chan float64) {
+func create_connection(wg *sync.WaitGroup, performanceCreate chan float64, conns *[CLIENT_NUM + 1]net.Conn, num int) {
+	defer wg.Done()
+
+	t1 := time.Now()
+	conn, err := onvmpoller.DialONVM("onvm", "127.0.0.2:8000")
+	// conn, err := net.Dial("tcp", "127.0.0.2:8000")
+	t2 := time.Now()
+
+	t := t2.Sub(t1).Seconds() * 1000
+
+	performanceCreate <- t
+
+	conns[num] = conn
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+}
+
+func write_and_read(wg *sync.WaitGroup, performanceRead chan float64, performanceWrite chan float64, num int, conn net.Conn) {
+	defer wg.Done()
+
+	buf := make([]byte, 1024)
+	msg := fmt.Sprintf("[Client + Conn_%d]", num)
+
+	t1 := time.Now()
+	conn.Write([]byte(msg))
+	t2 := time.Now()
+	_, err := conn.Read(buf)
+	t3 := time.Now()
+	tW := t2.Sub(t1).Seconds() * 1000
+	tR := t3.Sub(t2).Seconds() * 1000
+
+	performanceRead <- tR
+	performanceWrite <- tW
+
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+}
+
+func close_connection(wg *sync.WaitGroup, performanceClose chan float64, conn net.Conn) {
+	defer wg.Done()
+
+	t1 := time.Now()
+	conn.Close()
+	t2 := time.Now()
+
+	t := t2.Sub(t1).Seconds() * 1000
+
+	performanceClose <- t
+}
+
+func calculateCreate(wg *sync.WaitGroup, performanceCreate chan float64, performance chan float64) {
 	var (
 		count  int
 		result float64
@@ -61,7 +137,7 @@ func calculate(wg *sync.WaitGroup, performance chan float64) {
 
 	for {
 		select {
-		case p := <-performance:
+		case p := <-performanceCreate:
 			count++
 			result = result + p
 		default:
@@ -72,10 +148,12 @@ func calculate(wg *sync.WaitGroup, performance chan float64) {
 		}
 	}
 
-	logger.Log.Infof("Average time: %f", result/float64(CLIENT_NUM))
+	v := result / float64(CLIENT_NUM)
+	logger.Log.Infof("Average create connection: %f", v)
+	performance <- v
 }
 
-func calculateWrite(wg *sync.WaitGroup, performanceWrite chan float64) {
+func calculateWrite(wg *sync.WaitGroup, performanceWrite chan float64, performance chan float64) {
 	var (
 		count  int
 		result float64
@@ -97,10 +175,12 @@ func calculateWrite(wg *sync.WaitGroup, performanceWrite chan float64) {
 		}
 	}
 
-	logger.Log.Infof("Average read: %f", result/float64(CLIENT_NUM))
+	v := result / float64(CLIENT_NUM)
+	logger.Log.Infof("Average write: %f", v)
+	performance <- v
 }
 
-func calculateRead(wg *sync.WaitGroup, performanceRead chan float64) {
+func calculateRead(wg *sync.WaitGroup, performanceRead chan float64, performance chan float64) {
 	var (
 		count  int
 		result float64
@@ -122,58 +202,57 @@ func calculateRead(wg *sync.WaitGroup, performanceRead chan float64) {
 		}
 	}
 
-	logger.Log.Infof("Average write: %f", result/float64(CLIENT_NUM))
+	v := result / float64(CLIENT_NUM)
+	logger.Log.Infof("Average read: %f", v)
+	performance <- v
 }
 
-func client(num int, wg *sync.WaitGroup, performance chan float64, performanceRead chan float64, performanceWrite chan float64) {
+func calculateClose(wg *sync.WaitGroup, performanceClose chan float64, performance chan float64) {
+	var (
+		count  int
+		result float64
+	)
 	defer wg.Done()
-	msg := fmt.Sprintf("[Client + Conn_%d]", num)
+	count = 0
+	result = 0
 
-	t1 := time.Now()
-	_, tW, tR, err := sendTCP("127.0.0.2:8000", msg)
-	t2 := time.Now()
+	for {
+		select {
+		case p := <-performanceClose:
+			count++
+			result = result + p
+		default:
+		}
 
-	t := t2.Sub(t1).Seconds() * 1000
-	performanceRead <- tR
-	performanceWrite <- tW
-	performance <- t
-	logger.Log.Infof("[Delay] Write=%f, Read=%f", tW, tR)
-
-	if err != nil {
-		logger.Log.Errorln(err.Error())
-	} else {
-		// logger.Log.Infof("[Conn_%d] Recv response: %+v", num, res)
+		if count == CLIENT_NUM {
+			break
+		}
 	}
+
+	v := result / float64(CLIENT_NUM)
+	logger.Log.Infof("Average close connection: %f", v)
+	performance <- v
 }
 
-func sendTCP(addr, msg string) (string, float64, float64, error) {
-	// connect to this socket
-	var conn net.Conn
-	var err error
+func calculate(wg *sync.WaitGroup, performance chan float64) {
+	defer wg.Done()
 
-	// conn, err = net.Dial("tcp", addr)
-	conn, err = onvmpoller.DialONVM("onvm", addr)
+	count := 0
+	worker := 4
+	result := 0.0
 
-	if err != nil {
-		return "", 0.0, 0.0, err
+	for {
+		select {
+		case p := <-performance:
+			count++
+			result = result + p
+		default:
+		}
+
+		if count == worker {
+			break
+		}
 	}
 
-	defer conn.Close()
-
-	bs := make([]byte, 1024)
-
-	t1 := time.Now()
-	conn.Write([]byte(msg))
-	t2 := time.Now()
-	length, err := conn.Read(bs)
-	t3 := time.Now()
-	tW := t2.Sub(t1).Seconds() * 1000
-	tR := t3.Sub(t2).Seconds() * 1000
-
-	if err != nil {
-		return "", tW, tR, err
-	} else {
-		// return "", tW, tR, err
-		return string(bs[:length]), tW, tR, err
-	}
+	logger.Log.Infof("Average time: %f", result)
 }
