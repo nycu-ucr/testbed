@@ -3,8 +3,12 @@ package main
 import (
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"testbed/logger"
+	"time"
+
+	"github.com/nycu-ucr/onvmpoller"
 )
 
 const (
@@ -18,17 +22,17 @@ func main() {
 	src := addr + ":" + strconv.Itoa(port)
 
 	/* NF stop signal */
-	// go func() {
-	// 	time.Sleep(60 * time.Second)
-	// 	onvmpoller.CloseONVM()
-	// 	os.Exit(1)
-	// }()
-	// defer onvmpoller.CloseONVM()
-	// ID, _ := onvmpoller.IpToID(addr)
-	// logger.Log.Infof("[ONVM ID]: %d", ID)
-	// listener, err = onvmpoller.ListenONVM("onvm", src)
+	go func() {
+		time.Sleep(30 * time.Second)
+		onvmpoller.CloseONVM()
+		os.Exit(1)
+	}()
+	defer onvmpoller.CloseONVM()
+	ID, _ := onvmpoller.IpToID(addr)
+	logger.Log.Infof("[ONVM ID]: %d", ID)
+	listener, err = onvmpoller.ListenONVM("onvm", src)
 
-	listener, err = net.Listen("tcp", src)
+	// listener, err = net.Listen("tcp", src)
 
 	if err != nil {
 		logger.Log.Errorln(err.Error())
