@@ -29,12 +29,20 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("%s\n", sitemap)
-	// res, err = http.Get("http://127.0.0.2:8000/test-server/GetUser/")
-	// sitemap, err = ioutil.ReadAll(res.Body)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Printf("%s\n", sitemap)
+
+	res, err = http.Get("http://127.0.0.2:8000/test-server/GetUser")
+	sitemap, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s\n", sitemap)
+
+	res, err = http.Get("http://127.0.0.2:8000/test-server/")
+	sitemap, err = ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s\n", sitemap)
 
 	time.Sleep(10 * time.Second)
 }

@@ -137,7 +137,7 @@ func client(num int, wg *sync.WaitGroup, performance chan float64, performanceRe
 	performanceRead <- tR
 	performanceWrite <- tW
 	performance <- t
-	logger.Log.Infof("[Delay] Write=%f, Read=%f", tW, tR)
+	// logger.Log.Infof("[Delay] Write=%f, Read=%f", tW, tR)
 
 	if err != nil {
 		logger.Log.Errorln(err.Error())

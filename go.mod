@@ -5,12 +5,13 @@ go 1.18
 require (
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/gin-gonic/gin v1.8.1
-	github.com/nycu-ucr/onvmpoller v0.0.0-20220911143427-2819be74e87e
+	github.com/nycu-ucr/onvmpoller v0.0.0-20220921140804-ab1836439669
 	github.com/sirupsen/logrus v1.9.0
 	golang.org/x/net v0.0.0-20220812174116-3211cb980234
 )
 
 require (
+	github.com/cornelk/hashmap v1.0.8 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
