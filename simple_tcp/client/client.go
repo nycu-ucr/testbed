@@ -20,7 +20,7 @@ const (
 func main() {
 	/* NF stop signal */
 	go func() {
-		time.Sleep(30 * time.Second)
+		time.Sleep(20 * time.Second)
 		onvmpoller.CloseONVM()
 		os.Exit(1)
 	}()
@@ -47,7 +47,7 @@ func main() {
 		// time.Sleep(1 * time.Millisecond)
 	}
 	wg.Wait()
-	time.Sleep(30 * time.Second)
+	time.Sleep(20 * time.Second)
 }
 
 func calculate(wg *sync.WaitGroup, performance chan float64) {
@@ -137,7 +137,7 @@ func client(num int, wg *sync.WaitGroup, performance chan float64, performanceRe
 	performanceRead <- tR
 	performanceWrite <- tW
 	performance <- t
-	logger.Log.Infof("[Delay] Write=%f, Read=%f", tW, tR)
+	// logger.Log.Infof("[Delay] Write=%f, Read=%f", tW, tR)
 
 	if err != nil {
 		logger.Log.Errorln(err.Error())

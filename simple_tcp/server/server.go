@@ -23,7 +23,7 @@ func main() {
 
 	/* NF stop signal */
 	go func() {
-		time.Sleep(30 * time.Second)
+		time.Sleep(20 * time.Second)
 		onvmpoller.CloseONVM()
 		os.Exit(1)
 	}()
@@ -51,8 +51,8 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) {
-	remoteAddr := conn.RemoteAddr().String()
-	logger.Log.Infof("Client connected from: " + remoteAddr)
+	// remoteAddr := conn.RemoteAddr().String()
+	// logger.Log.Infof("Client connected from: " + remoteAddr)
 
 	// Make a buffer to hold incoming data.
 	buf := make([]byte, 1024)
@@ -62,7 +62,7 @@ func handleConnection(conn net.Conn) {
 		if err != nil {
 
 			if err.Error() == "EOF" {
-				logger.Log.Infof("Disconned from: %s", remoteAddr)
+				// logger.Log.Infof("Disconned from: %s", remoteAddr)
 				break
 			} else {
 				logger.Log.Errorf("Error reading:", err.Error())
@@ -73,10 +73,10 @@ func handleConnection(conn net.Conn) {
 			msg := fmt.Sprintf("[Server]%s", string(buf[:reqLen]))
 			conn.Write([]byte(msg))
 
-			logger.Log.Infof("len: %d, recv: %s\n", reqLen, string(buf[:reqLen]))
+			// logger.Log.Infof("len: %d, recv: %s\n", reqLen, string(buf[:reqLen]))
 		}
 	}
-	logger.Log.Infof("Client close connection")
+	// logger.Log.Infof("Client close connection")
 	// Close the connection when you're done with it.
 	conn.Close()
 }

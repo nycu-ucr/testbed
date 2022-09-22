@@ -3,7 +3,7 @@ GO_SRC_PATH = simple_tcp
 ROOT_PATH = $(shell pwd)
 
 NF = $(GO_NF)
-GO_NF = server client NF_A
+GO_NF = server client
 
 NF_GO_FILES = $(shell find $(GO_SRC_PATH)/$(%) -name "*.go" ! -name "*_test.go")
 
