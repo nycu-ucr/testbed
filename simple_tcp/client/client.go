@@ -44,7 +44,7 @@ func main() {
 	time.Sleep(5 * time.Second)
 	for i := 1; i <= CLIENT_NUM; i++ {
 		go client(i, wg, performance, performanceRead, performanceWrite)
-		// time.Sleep(1 * time.Millisecond)
+		time.Sleep(1 * time.Millisecond)
 	}
 	wg.Wait()
 	time.Sleep(30 * time.Second)
