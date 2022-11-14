@@ -5,17 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
+
+	// "net/http"
 	"os"
 	"strconv"
 	"testbed/logger"
 	"time"
 
+	"github.com/nycu-ucr/gonet/http"
 	"github.com/nycu-ucr/onvmpoller"
 )
 
 const (
-	EPOCHS = 1
+	EPOCHS   = 1
+	USE_ONVM = true
 )
 
 var (
@@ -29,15 +32,14 @@ type User struct {
 }
 
 func main() {
-	go func() {
-		time.Sleep(30 * time.Second)
-		onvmpoller.CloseONVM()
-		os.Exit(1)
-	}()
-	defer onvmpoller.CloseONVM()
-
-	/* Wait for ONVM to init */
-	time.Sleep(5 * time.Second)
+	if USE_ONVM {
+		go func() {
+			time.Sleep(30 * time.Second)
+			onvmpoller.CloseONVM()
+			os.Exit(1)
+		}()
+		defer onvmpoller.CloseONVM()
+	}
 
 	/* Init global var */
 	ID = 50

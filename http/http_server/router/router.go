@@ -1,9 +1,11 @@
 package router
 
 import (
-	"net/http"
+	// "net/http"
 
-	"github.com/gin-gonic/gin"
+	"github.com/nycu-ucr/gin"
+	"github.com/nycu-ucr/gonet/http"
+	// "github.com/gin-gonic/gin"
 )
 
 // Route is the information for every URI.

@@ -2,22 +2,23 @@ package main
 
 import (
 	"fmt"
-	// "net"
-	"net/http"
+	// "net/http"
 	"os"
 	"time"
 
 	"testbed/http/http_server/logger"
 	"testbed/http/http_server/router"
 
+	"github.com/nycu-ucr/gonet/http"
+	"github.com/nycu-ucr/net/http2"
+	"github.com/nycu-ucr/net/http2/h2c"
 	"github.com/nycu-ucr/onvmpoller"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
 )
 
 const IP = "127.0.0.2"
 const port = "8000"
+const USE_ONVM = true
 
 var host = IP + ":" + port
 
@@ -30,12 +31,14 @@ func checkErr(err error) {
 }
 
 func main() {
-	go func() {
-		time.Sleep(30 * time.Second)
-		onvmpoller.CloseONVM()
-		os.Exit(1)
-	}()
-	defer onvmpoller.CloseONVM()
+	if USE_ONVM {
+		go func() {
+			time.Sleep(30 * time.Second)
+			onvmpoller.CloseONVM()
+			os.Exit(1)
+		}()
+		defer onvmpoller.CloseONVM()
+	}
 
 	fmt.Printf("Server started")
 	logger.SetLogLevel(logrus.TraceLevel)
