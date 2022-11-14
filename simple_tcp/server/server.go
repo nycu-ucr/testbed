@@ -1,19 +1,15 @@
 package main
 
 import (
-	"fmt"
 	"net"
-	"os"
 	"strconv"
 	"testbed/logger"
-	"time"
-
-	"github.com/nycu-ucr/onvmpoller"
 )
 
 const (
-	addr = "127.0.0.2"
-	port = 8000
+	addr     = "127.0.0.3"
+	port     = 8591
+	MSG_SIZE = 2049
 )
 
 func main() {
@@ -22,17 +18,17 @@ func main() {
 	src := addr + ":" + strconv.Itoa(port)
 
 	/* NF stop signal */
-	go func() {
-		time.Sleep(30 * time.Second)
-		onvmpoller.CloseONVM()
-		os.Exit(1)
-	}()
-	defer onvmpoller.CloseONVM()
-	ID, _ := onvmpoller.IpToID(addr)
-	logger.Log.Infof("[ONVM ID]: %d", ID)
-	listener, err = onvmpoller.ListenONVM("onvm", src)
+	// go func() {
+	// 	time.Sleep(30 * time.Second)
+	// 	onvmpoller.CloseONVM()
+	// 	os.Exit(1)
+	// }()
+	// defer onvmpoller.CloseONVM()
+	// ID, _ := onvmpoller.IpToID(addr)
+	// logger.Log.Infof("[ONVM ID]: %d", ID)
+	// listener, err = onvmpoller.ListenONVM("onvm", src)
 
-	// listener, err = net.Listen("tcp", src)
+	listener, err = net.Listen("tcp", src)
 
 	if err != nil {
 		logger.Log.Errorln(err.Error())
@@ -51,18 +47,18 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) {
-	remoteAddr := conn.RemoteAddr().String()
+	// remoteAddr := conn.RemoteAddr().String()
 	// logger.Log.Infof("Client connected from: " + remoteAddr)
 
 	// Make a buffer to hold incoming data.
-	buf := make([]byte, 1024)
+	buf := make([]byte, MSG_SIZE)
 	for {
 		// Read the incoming connection into the buffer.
 		reqLen, err := conn.Read(buf)
 		if err != nil {
 
 			if err.Error() == "EOF" {
-				logger.Log.Infof("Disconned from: %s", remoteAddr)
+				// logger.Log.Infof("Disconned from: %s", remoteAddr)
 				break
 			} else {
 				logger.Log.Errorf("Error reading:", err.Error())
@@ -70,10 +66,11 @@ func handleConnection(conn net.Conn) {
 			}
 		} else {
 			// Send a response back to person contacting us.
-			msg := fmt.Sprintf("[Server]%s", string(buf[:reqLen]))
+			msg := string(buf[:reqLen])
 			conn.Write([]byte(msg))
 
-			logger.Log.Infof("len: %d, recv: %s\n", reqLen, string(buf[:reqLen]))
+			// logger.Log.Infof("len: %d, recv:\n%s\n", reqLen, string(buf[:reqLen]))
+			// logger.Log.Infof("len: %d\n", reqLen)
 		}
 	}
 	// logger.Log.Infof("Client close connection")

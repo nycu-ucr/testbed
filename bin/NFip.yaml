@@ -1,0 +1,4 @@
+# IP Address: Service ID
+NFIPMap:
+  server: 127.0.0.3
+  client: 127.0.0.2

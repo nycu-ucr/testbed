@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	EPOCHS = 1
+	EPOCHS = 3
 )
 
 var (
@@ -47,10 +47,10 @@ func main() {
 		httpGET("http://127.0.0.2:8000/test-server/GetUser")
 		httpPost("http://127.0.0.2:8000/test-server/PostUser")
 		httpGET("http://127.0.0.2:8000/test-server/GetUser")
-		httpGET("http://127.0.0.2:8000/test-server/GetUser/1")
+		httpGET("http://127.0.0.2:8000/test-server/GetUser/51")
 	}
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(30 * time.Second)
 }
 
 func httpGET(url string) {
@@ -68,7 +68,7 @@ func httpGET(url string) {
 		logger.Log.Fatal(err)
 	}
 
-	logger.Log.Infof("URL: %s\nResponse: %s\nDelay: %f", url, rsp, delay)
+	logger.Log.Infof("URL: %s\n\u001b[92m[Response]\u001b[0m \n%s\n\u001b[95m[Delay]\u001b[0m %f", url, rsp, delay)
 
 	return
 }
@@ -95,7 +95,7 @@ func httpPost(url string) {
 		logger.Log.Fatal(err)
 	}
 
-	logger.Log.Infof("URL: %s\nResponse: %s\nDelay: %f", url, rsp, delay)
+	logger.Log.Infof("URL: %s\n\u001b[92m[Response]\u001b[0m \n%s\n\u001b[95m[Delay]\u001b[0m %f", url, rsp, delay)
 
 	return
 }
