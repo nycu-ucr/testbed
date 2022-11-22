@@ -40,6 +40,7 @@ func main() {
 		}()
 		defer onvmpoller.CloseONVM()
 	}
+	onvmpoller.SetLocalAddress("127.0.0.1")
 
 	/* Init global var */
 	ID = 50

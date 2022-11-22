@@ -39,6 +39,7 @@ func main() {
 		}()
 		defer onvmpoller.CloseONVM()
 	}
+	onvmpoller.SetLocalAddress(IP)
 
 	fmt.Printf("Server started")
 	logger.SetLogLevel(logrus.TraceLevel)
