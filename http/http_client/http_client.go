@@ -2,27 +2,35 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-
-	// "net/http"
+	"net"
 	"os"
 	"strconv"
 	"testbed/logger"
 	"time"
 
 	"github.com/nycu-ucr/gonet/http"
+	"github.com/nycu-ucr/net/http2"
 	"github.com/nycu-ucr/onvmpoller"
 )
 
 const (
-	EPOCHS   = 1
-	USE_ONVM = true
+	EPOCHS        = 1
+	USE_ONVM      = true
+	USE_HTTP1     = 0
+	USE_HTTP2     = 1
+	USE_HTTP_ONVM = 2
 )
 
 var (
-	ID int
+	ID           int
+	tcp_h1c      *http.Client
+	tcp_h2c      *http.Client
+	onvm_h2c     *http.Client
+	http_clients [3]*http.Client
 )
 
 type User struct {
@@ -42,25 +50,43 @@ func main() {
 	}
 	onvmpoller.SetLocalAddress("127.0.0.1")
 
+	tcp_h1c = http.DefaultClient
+	tcp_h2c = &http.Client{
+		Transport: &http2.Transport{
+			AllowHTTP: true,
+			DialTLS:   func(network, addr string, cfg *tls.Config) (net.Conn, error) { return net.Dial(network, addr) },
+		},
+	}
+	onvm_h2c = &http.Client{
+		Transport: &http2.OnvmTransport{
+			UseONVM: true,
+			// USE_ONVM: false,
+		},
+	}
+	http_clients[USE_HTTP1] = tcp_h1c
+	http_clients[USE_HTTP2] = tcp_h2c
+	http_clients[USE_HTTP_ONVM] = onvm_h2c
+
 	/* Init global var */
 	ID = 50
+	hc_idx := USE_HTTP2
 
 	for i := 0; i < EPOCHS; i++ {
-		httpPost("http://127.0.0.2:8000/test-server/PostUser")
-		httpGET("http://127.0.0.2:8000/test-server/GetUser")
-		httpPost("http://127.0.0.2:8000/test-server/PostUser")
-		httpGET("http://127.0.0.2:8000/test-server/GetUser")
-		httpGET("http://127.0.0.2:8000/test-server/GetUser/1")
+		httpPost("http://127.0.0.2:8000/test-server/PostUser", hc_idx)
+		httpGET("http://127.0.0.2:8000/test-server/GetUser", hc_idx)
+		httpPost("http://127.0.0.2:8000/test-server/PostUser", hc_idx)
+		httpGET("http://127.0.0.2:8000/test-server/GetUser", hc_idx)
+		httpGET("http://127.0.0.2:8000/test-server/GetUser/1", hc_idx)
 	}
 
 	time.Sleep(10 * time.Second)
 }
 
-func httpGET(url string) {
+func httpGET(url string, hc_idx int) {
 	var err error
 
 	t1 := time.Now()
-	res, err := http.Get(url)
+	res, err := http_clients[hc_idx].Get(url)
 	rsp, err := ioutil.ReadAll(res.Body)
 	t2 := time.Now()
 
@@ -76,7 +102,7 @@ func httpGET(url string) {
 	return
 }
 
-func httpPost(url string) {
+func httpPost(url string, hc_idx int) {
 	var err error
 	user := &User{
 		Id:       strconv.Itoa(ID),
@@ -87,7 +113,7 @@ func httpPost(url string) {
 	b, err := json.Marshal(user)
 
 	t1 := time.Now()
-	res, err := http.Post(url, "application/json", bytes.NewReader(b))
+	res, err := http_clients[hc_idx].Post(url, "application/json", bytes.NewReader(b))
 	rsp, err := ioutil.ReadAll(res.Body)
 	t2 := time.Now()
 
