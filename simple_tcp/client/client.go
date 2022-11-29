@@ -14,7 +14,13 @@ import (
 const (
 	addr       = "127.0.0.1"
 	port       = 6000
-	CLIENT_NUM = 200
+	CLIENT_NUM = 500
+)
+
+var (
+	read_time  float64
+	write_time float64
+	total_time float64
 )
 
 func main() {
@@ -30,6 +36,15 @@ func main() {
 	logger.Log.Infof("[ONVM ID]: %d", ID)
 	onvmpoller.SetLocalAddress(addr)
 
+	is_onvm := true
+	var fname string
+	// Relative to onvm/testbed/bin
+	if is_onvm {
+		fname = "../simple_tcp/simple_tcp3_onvm.csv"
+	} else {
+		fname = "../simple_tcp/simple_tcp3_tcp.csv"
+	}
+
 	/* Wait all client finish */
 	wg := new(sync.WaitGroup)
 	wg.Add(CLIENT_NUM + 3)
@@ -41,13 +56,23 @@ func main() {
 	go calculateWrite(wg, performanceRead)
 	go calculate(wg, performance)
 
-	time.Sleep(5 * time.Second)
 	for i := 1; i <= CLIENT_NUM; i++ {
 		go client(i, wg, performance, performanceRead, performanceWrite)
 		time.Sleep(1 * time.Millisecond)
 	}
 	wg.Wait()
-	time.Sleep(30 * time.Second)
+	f, err := os.OpenFile(fname, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		panic(err)
+	}
+
+	defer f.Close()
+
+	text := fmt.Sprintf("%.6f,%.6f,%.6f\n", read_time, write_time, total_time)
+	if _, err = f.WriteString(text); err != nil {
+		panic(err)
+	}
+	// time.Sleep(30 * time.Second)
 }
 
 func calculate(wg *sync.WaitGroup, performance chan float64) {
@@ -72,7 +97,8 @@ func calculate(wg *sync.WaitGroup, performance chan float64) {
 		}
 	}
 
-	logger.Log.Infof("Average time: %f", result/float64(CLIENT_NUM))
+	total_time = result / float64(CLIENT_NUM)
+	logger.Log.Infof("Average time: %f (ms)", total_time)
 }
 
 func calculateWrite(wg *sync.WaitGroup, performanceWrite chan float64) {
@@ -97,7 +123,8 @@ func calculateWrite(wg *sync.WaitGroup, performanceWrite chan float64) {
 		}
 	}
 
-	logger.Log.Infof("Average read: %f", result/float64(CLIENT_NUM))
+	read_time = result / float64(CLIENT_NUM)
+	logger.Log.Infof("Average read: %f (ms)", read_time)
 }
 
 func calculateRead(wg *sync.WaitGroup, performanceRead chan float64) {
@@ -122,7 +149,8 @@ func calculateRead(wg *sync.WaitGroup, performanceRead chan float64) {
 		}
 	}
 
-	logger.Log.Infof("Average write: %f", result/float64(CLIENT_NUM))
+	write_time = result / float64(CLIENT_NUM)
+	logger.Log.Infof("Average write: %f (ms)", write_time)
 }
 
 func client(num int, wg *sync.WaitGroup, performance chan float64, performanceRead chan float64, performanceWrite chan float64) {
