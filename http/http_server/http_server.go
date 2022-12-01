@@ -11,8 +11,9 @@ import (
 
 	"github.com/nycu-ucr/gonet/http"
 	"github.com/nycu-ucr/net/http2"
-	"github.com/nycu-ucr/net/http2/h2c"
+	"github.com/nycu-ucr/net/http2/onvm2c"
 	"github.com/nycu-ucr/onvmpoller"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -65,7 +66,7 @@ func H2CServerUpgrade(handler http.Handler) *http.Server {
 
 	server := &http.Server{
 		Addr:    host,
-		Handler: h2c.NewHandler(handler, h2s),
+		Handler: onvm2c.NewHandler(handler, h2s),
 	}
 
 	return server
