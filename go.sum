@@ -53,8 +53,12 @@ github.com/nycu-ucr/gonet v0.0.0-20221130123631-972963bb735f h1:sQ+AcatEW6Dv+Yng
 github.com/nycu-ucr/gonet v0.0.0-20221130123631-972963bb735f/go.mod h1:Pv42t+Q6836pXU3n4sT9sU0Tu+lSyZl6pOQPdVN6exs=
 github.com/nycu-ucr/net v0.0.0-20221130123529-a952786c7ff0 h1:pzxULEj/QWY/SaxC4UAdFi1du2Swm2BEumTiPigtpTE=
 github.com/nycu-ucr/net v0.0.0-20221130123529-a952786c7ff0/go.mod h1:dROBY3Es0LYme/C+B/r9k5MaImufULqu8eSUzF95mg8=
+github.com/nycu-ucr/net v0.0.0-20221206092417-802161a3c668 h1:Rm8YyNIlI2JEMQaRG1Gl00Xkf915/728C5FadcNvqhs=
+github.com/nycu-ucr/net v0.0.0-20221206092417-802161a3c668/go.mod h1:dROBY3Es0LYme/C+B/r9k5MaImufULqu8eSUzF95mg8=
 github.com/nycu-ucr/onvmpoller v0.0.0-20221130113043-306c8f5536b1 h1:xoE6SRh2NyFnaEdhr5dUrDFjwz8mvfaJwiGat/QNc6Q=
 github.com/nycu-ucr/onvmpoller v0.0.0-20221130113043-306c8f5536b1/go.mod h1:KGOJFB22ziiaSu3FEpKZLBmwwbH2XIvcI7AigdWRxNU=
+github.com/nycu-ucr/onvmpoller v0.0.0-20221130143136-25f213a47d1f h1:uMz/5G/gd3mVjsacrMINfT/uCeSvKYsXwP5OBwfJRFc=
+github.com/nycu-ucr/onvmpoller v0.0.0-20221130143136-25f213a47d1f/go.mod h1:KGOJFB22ziiaSu3FEpKZLBmwwbH2XIvcI7AigdWRxNU=
 github.com/nycu-ucr/sse v0.0.0-20221108140034-8e09fddc7347 h1:TTevBy56sviIo1sQXxqzGOWVg8EprP+cDIdbZgB0vu8=
 github.com/nycu-ucr/sse v0.0.0-20221108140034-8e09fddc7347/go.mod h1:cTHuRZqz4zKejBiZsJj4N2oeGFw3XE2z2QzX+9/gJvs=
 github.com/pelletier/go-toml/v2 v2.0.6 h1:nrzqCb7j9cDFj2coyLNLaZuJTLjWjlaz6nvTvIwycIU=

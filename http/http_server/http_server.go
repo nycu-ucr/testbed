@@ -67,6 +67,7 @@ func H2CServerUpgrade(handler http.Handler) *http.Server {
 	server := &http.Server{
 		Addr:    host,
 		Handler: onvm2c.NewHandler(handler, h2s),
+		// Handler: h2c.NewHandler(handler, h2s),
 	}
 
 	return server

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -17,6 +18,7 @@ import (
 	"github.com/nycu-ucr/gonet/http"
 	"github.com/nycu-ucr/net/http2"
 	"github.com/nycu-ucr/onvmpoller"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -26,7 +28,8 @@ const (
 )
 
 var (
-	ID int
+	ID    int
+	datas []string
 )
 
 type User struct {
@@ -47,7 +50,9 @@ func main() {
 	onvmpoller.SetLocalAddress("127.0.0.3")
 
 	/* Init global var */
+	logger.Log.Logger.SetLevel(logrus.InfoLevel)
 	ID = 50
+	datas = make([]string, 0)
 
 	for i := 0; i < EPOCHS; i++ {
 		http2Post("http://127.0.0.2:8000/test-server/PostUser")
@@ -56,6 +61,17 @@ func main() {
 		http2GET("http://127.0.0.2:8000/test-server/GetUser")
 		http2GET("http://127.0.0.2:8000/test-server/GetUser/1")
 	}
+
+	f, err := os.OpenFile("/home/johnson/onvm/result/http.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 6666)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	w := csv.NewWriter(f)
+	defer f.Close()
+	fmt.Println(datas)
+	w.Write(datas)
+	w.Flush()
 
 	time.Sleep(10 * time.Second)
 }
@@ -76,7 +92,8 @@ func httpGET(url string) {
 		logger.Log.Fatal(err)
 	}
 
-	logger.Log.Infof("URL: %s\nResponse: %s\nDelay: %f", url, rsp, delay)
+	logger.Log.Debugf("URL: %s\nResponse: %s\nDelay: %f", url, rsp, delay)
+	datas = append(datas, fmt.Sprintf("%.8f", delay))
 
 	return
 }
@@ -104,7 +121,8 @@ func httpPost(url string) {
 		logger.Log.Fatal(err)
 	}
 
-	logger.Log.Infof("URL: %s\nResponse: %s\nDelay: %f", url, rsp, delay)
+	logger.Log.Debugf("URL: %s\nResponse: %s\nDelay: %f", url, rsp, delay)
+	datas = append(datas, fmt.Sprintf("%.8f", delay))
 
 	return
 }
@@ -151,7 +169,8 @@ func http2Post(url string) {
 	}
 	defer resp.Body.Close()
 
-	logger.Log.Infof("URL: %s\n\u001b[92m[Response]\u001b[0m \n%s\n\u001b[95m[Delay]\u001b[0m %f", url, rsp, delay)
+	logger.Log.Debugf("URL: %s\n\u001b[92m[Response]\u001b[0m \n%s\n\u001b[95m[Delay]\u001b[0m %f", url, rsp, delay)
+	datas = append(datas, fmt.Sprintf("%.8f", delay))
 }
 
 func http2GET(url string) {
@@ -189,7 +208,6 @@ func http2GET(url string) {
 		logger.Log.Fatal(err)
 	}
 
-	logger.Log.Infof("URL: %s\n\u001b[92m[Response]\u001b[0m \n%s\n\u001b[95m[Delay]\u001b[0m %f", url, rsp, delay)
-
-	return
+	logger.Log.Debugf("URL: %s\n\u001b[92m[Response]\u001b[0m \n%s\n\u001b[95m[Delay]\u001b[0m %f", url, rsp, delay)
+	datas = append(datas, fmt.Sprintf("%.8f", delay))
 }
