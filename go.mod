@@ -5,8 +5,8 @@ go 1.18
 require (
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/nycu-ucr/gin v0.0.0-20221108140334-9ba2d17cede5
-	github.com/nycu-ucr/gonet v0.0.0-20221130123631-972963bb735f
-	github.com/nycu-ucr/net v0.0.0-20221130123529-a952786c7ff0
+	github.com/nycu-ucr/gonet v0.0.0-20221206181427-d67da1e7556c
+	github.com/nycu-ucr/net v0.0.0-20221206182048-09463a9e9f8b
 	github.com/nycu-ucr/onvmpoller v0.0.0-20221130113043-306c8f5536b1
 	github.com/sirupsen/logrus v1.9.0
 )

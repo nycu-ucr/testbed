@@ -122,12 +122,22 @@ func http2Post(url string) {
 	var t http.RoundTripper
 
 	if !USE_ONVM_TRANSPORT {
-		logger.Log.Warnln("Using http2.Transport")
-		t = &http2.Transport{
-			AllowHTTP: true,
-			DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
-				return onvmpoller.DialONVM("onvm", addr)
-			},
+		if USE_ONVM {
+			logger.Log.Warnln("Using ONVM socket")
+			t = &http2.Transport{
+				AllowHTTP: true,
+				DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+					return onvmpoller.DialONVM("onvm", addr)
+				},
+			}
+		} else {
+			logger.Log.Warnln("Using TCP socket")
+			t = &http2.Transport{
+				AllowHTTP: true,
+				DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+					return net.Dial("tcp", addr)
+				},
+			}
 		}
 	} else {
 		logger.Log.Warnln("Using http2.OnvmTransport")
@@ -160,11 +170,22 @@ func http2GET(url string) {
 
 	if !USE_ONVM_TRANSPORT {
 		logger.Log.Warnln("Using http2.Transport")
-		t = &http2.Transport{
-			AllowHTTP: true,
-			DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
-				return onvmpoller.DialONVM("onvm", addr)
-			},
+		if USE_ONVM {
+			logger.Log.Warnln("Using ONVM socket")
+			t = &http2.Transport{
+				AllowHTTP: true,
+				DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+					return onvmpoller.DialONVM("onvm", addr)
+				},
+			}
+		} else {
+			logger.Log.Warnln("Using TCP socket")
+			t = &http2.Transport{
+				AllowHTTP: true,
+				DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+					return net.Dial("tcp", addr)
+				},
+			}
 		}
 	} else {
 		logger.Log.Warnln("Using http2.OnvmTransport")

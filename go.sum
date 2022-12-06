@@ -49,10 +49,10 @@ github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9G
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/nycu-ucr/gin v0.0.0-20221108140334-9ba2d17cede5 h1:pHI4JaQu87uCwRBWhXxxpzxhHMByvm7824oidU6y5xw=
 github.com/nycu-ucr/gin v0.0.0-20221108140334-9ba2d17cede5/go.mod h1:3DD+IQKIDhm6fv0qGXNSjDREc7MaSXVVhAt+9+dAJS4=
-github.com/nycu-ucr/gonet v0.0.0-20221130123631-972963bb735f h1:sQ+AcatEW6Dv+YngWTC2Ex1ses5pR7wttZ/7kau1Ym4=
-github.com/nycu-ucr/gonet v0.0.0-20221130123631-972963bb735f/go.mod h1:Pv42t+Q6836pXU3n4sT9sU0Tu+lSyZl6pOQPdVN6exs=
-github.com/nycu-ucr/net v0.0.0-20221130123529-a952786c7ff0 h1:pzxULEj/QWY/SaxC4UAdFi1du2Swm2BEumTiPigtpTE=
-github.com/nycu-ucr/net v0.0.0-20221130123529-a952786c7ff0/go.mod h1:dROBY3Es0LYme/C+B/r9k5MaImufULqu8eSUzF95mg8=
+github.com/nycu-ucr/gonet v0.0.0-20221206181427-d67da1e7556c h1:d4Zn2xCzW0XimChJlJ/jlEl7g63bN8JxGRyyb6235iE=
+github.com/nycu-ucr/gonet v0.0.0-20221206181427-d67da1e7556c/go.mod h1:Pv42t+Q6836pXU3n4sT9sU0Tu+lSyZl6pOQPdVN6exs=
+github.com/nycu-ucr/net v0.0.0-20221206182048-09463a9e9f8b h1:DJnwWRnVhrO34tZuAqY+wPL3+tIIuWu5TJomFte1PTk=
+github.com/nycu-ucr/net v0.0.0-20221206182048-09463a9e9f8b/go.mod h1:dROBY3Es0LYme/C+B/r9k5MaImufULqu8eSUzF95mg8=
 github.com/nycu-ucr/onvmpoller v0.0.0-20221130113043-306c8f5536b1 h1:xoE6SRh2NyFnaEdhr5dUrDFjwz8mvfaJwiGat/QNc6Q=
 github.com/nycu-ucr/onvmpoller v0.0.0-20221130113043-306c8f5536b1/go.mod h1:KGOJFB22ziiaSu3FEpKZLBmwwbH2XIvcI7AigdWRxNU=
 github.com/nycu-ucr/sse v0.0.0-20221108140034-8e09fddc7347 h1:TTevBy56sviIo1sQXxqzGOWVg8EprP+cDIdbZgB0vu8=

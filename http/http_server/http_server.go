@@ -57,7 +57,7 @@ func main() {
 func H2CServerUpgrade(handler http.Handler) *http.Server {
 	h2s := &http2.Server{
 		// TODO: extends the idle time after re-use openapi client
-		IdleTimeout: 1 * time.Millisecond,
+		IdleTimeout: 10 * time.Second,
 	}
 
 	// handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -65,8 +65,9 @@ func H2CServerUpgrade(handler http.Handler) *http.Server {
 	// })
 
 	server := &http.Server{
-		Addr:    host,
-		Handler: onvm2c.NewHandler(handler, h2s),
+		USING_ONVM_SOCKET: true,
+		Addr:              host,
+		Handler:           onvm2c.NewHandler(handler, h2s),
 	}
 
 	return server
