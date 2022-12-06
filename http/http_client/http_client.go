@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -15,22 +16,18 @@ import (
 	"github.com/nycu-ucr/gonet/http"
 	"github.com/nycu-ucr/net/http2"
 	"github.com/nycu-ucr/onvmpoller"
+	"github.com/sirupsen/logrus"
 )
 
 const (
-	EPOCHS        = 1
-	USE_ONVM      = true
-	USE_HTTP1     = 0
-	USE_HTTP2     = 1
-	USE_HTTP_ONVM = 2
+	EPOCHS             = 1
+	USE_ONVM           = true
+	USE_ONVM_TRANSPORT = true
 )
 
 var (
-	ID           int
-	tcp_h1c      *http.Client
-	tcp_h2c      *http.Client
-	onvm_h2c     *http.Client
-	http_clients [3]*http.Client
+	ID    int
+	datas []string
 )
 
 type User struct {
@@ -50,39 +47,35 @@ func main() {
 	}
 	onvmpoller.SetLocalAddress("127.0.0.1")
 
-	tcp_h1c = http.DefaultClient
-	tcp_h2c = &http.Client{
-		Transport: &http2.Transport{
-			AllowHTTP: true,
-			DialTLS:   func(network, addr string, cfg *tls.Config) (net.Conn, error) { return net.Dial(network, addr) },
-		},
-	}
-	onvm_h2c = &http.Client{
-		Transport: &http2.OnvmTransport{
-			UseONVM: true,
-			// USE_ONVM: false,
-		},
-	}
-	http_clients[USE_HTTP1] = tcp_h1c
-	http_clients[USE_HTTP2] = tcp_h2c
-	http_clients[USE_HTTP_ONVM] = onvm_h2c
-
 	/* Init global var */
+	logger.Log.Logger.SetLevel(logrus.InfoLevel)
 	ID = 50
-	hc_idx := USE_HTTP2
+	datas = make([]string, 0)
 
 	for i := 0; i < EPOCHS; i++ {
-		httpPost("http://127.0.0.2:8000/test-server/PostUser", hc_idx)
-		httpGET("http://127.0.0.2:8000/test-server/GetUser", hc_idx)
-		httpPost("http://127.0.0.2:8000/test-server/PostUser", hc_idx)
-		httpGET("http://127.0.0.2:8000/test-server/GetUser", hc_idx)
-		httpGET("http://127.0.0.2:8000/test-server/GetUser/1", hc_idx)
+		http2Post("http://127.0.0.2:8000/test-server/PostUser")
+		http2GET("http://127.0.0.2:8000/test-server/GetUser")
+		http2Post("http://127.0.0.2:8000/test-server/PostUser")
+		http2GET("http://127.0.0.2:8000/test-server/GetUser")
+		http2GET("http://127.0.0.2:8000/test-server/GetUser/1")
 	}
+
+	f, err := os.OpenFile("/home/johnson/onvm/result/http.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 6666)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+	w := csv.NewWriter(f)
+	defer f.Close()
+	fmt.Println(datas)
+	w.Write(datas)
+	w.Flush()
 
 	time.Sleep(10 * time.Second)
 }
 
-func httpGET(url string, hc_idx int) {
+func httpGET(url string) {
+	logger.Log.Warnln("Using http1")
 	var err error
 
 	t1 := time.Now()
@@ -97,12 +90,14 @@ func httpGET(url string, hc_idx int) {
 		logger.Log.Fatal(err)
 	}
 
-	logger.Log.Infof("URL: %s\nResponse: %s\nDelay: %f", url, rsp, delay)
+	logger.Log.Debugf("URL: %s\nResponse: %s\nDelay: %f", url, rsp, delay)
+	datas = append(datas, fmt.Sprintf("%.8f", delay))
 
 	return
 }
 
-func httpPost(url string, hc_idx int) {
+func httpPost(url string) {
+	logger.Log.Warnln("Using http1")
 	var err error
 	user := &User{
 		Id:       strconv.Itoa(ID),
@@ -124,7 +119,93 @@ func httpPost(url string, hc_idx int) {
 		logger.Log.Fatal(err)
 	}
 
-	logger.Log.Infof("URL: %s\nResponse: %s\nDelay: %f", url, rsp, delay)
+	logger.Log.Debugf("URL: %s\nResponse: %s\nDelay: %f", url, rsp, delay)
+	datas = append(datas, fmt.Sprintf("%.8f", delay))
 
 	return
+}
+
+func http2Post(url string) {
+	var err error
+	user := &User{
+		Id:       strconv.Itoa(ID),
+		Name:     fmt.Sprintf("Ben%d", ID),
+		Password: "qqqqq",
+	}
+	ID = ID + 1
+	b, err := json.Marshal(user)
+
+	var t http.RoundTripper
+
+	if !USE_ONVM_TRANSPORT {
+		logger.Log.Warnln("Using http2.Transport")
+		t = &http2.Transport{
+			AllowHTTP: true,
+			DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+				return onvmpoller.DialONVM("onvm", addr)
+			},
+		}
+	} else {
+		logger.Log.Warnln("Using http2.OnvmTransport")
+		t = &http2.OnvmTransport{
+			UseONVM: true,
+		}
+	}
+
+	c := &http.Client{
+		Transport: t,
+	}
+
+	t1 := time.Now()
+	resp, err := c.Post(url, "application/json", bytes.NewReader(b))
+	rsp, _ := ioutil.ReadAll(resp.Body)
+	t2 := time.Now()
+
+	delay := t2.Sub(t1).Seconds() * 1000
+	if err != nil {
+		logger.Log.Fatal("request error")
+	}
+	defer resp.Body.Close()
+
+	logger.Log.Debugf("URL: %s\n\u001b[92m[Response]\u001b[0m \n%s\n\u001b[95m[Delay]\u001b[0m %f", url, rsp, delay)
+	datas = append(datas, fmt.Sprintf("%.8f", delay))
+}
+
+func http2GET(url string) {
+	var err error
+	var t http.RoundTripper
+
+	if !USE_ONVM_TRANSPORT {
+		logger.Log.Warnln("Using http2.Transport")
+		t = &http2.Transport{
+			AllowHTTP: true,
+			DialTLS: func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+				return onvmpoller.DialONVM("onvm", addr)
+			},
+		}
+	} else {
+		logger.Log.Warnln("Using http2.OnvmTransport")
+		t = &http2.OnvmTransport{
+			UseONVM: true,
+		}
+	}
+
+	c := &http.Client{
+		Transport: t,
+	}
+
+	t1 := time.Now()
+	res, err := c.Get(url)
+	rsp, err := ioutil.ReadAll(res.Body)
+	t2 := time.Now()
+
+	delay := t2.Sub(t1).Seconds() * 1000
+	defer res.Body.Close()
+
+	if err != nil {
+		logger.Log.Fatal(err)
+	}
+
+	logger.Log.Debugf("URL: %s\n\u001b[92m[Response]\u001b[0m \n%s\n\u001b[95m[Delay]\u001b[0m %f", url, rsp, delay)
+	datas = append(datas, fmt.Sprintf("%.8f", delay))
 }
