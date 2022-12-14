@@ -53,7 +53,7 @@ func GetUserInformationProcedure(id string) (context.Users, *httpwrapper.Problem
 			}
 			return true
 		})
-		logger.ServerLog.Infof("Find users: %+v", users)
+		// logger.ServerLog.Infof("Find users: %+v", users)
 	}
 
 	return users, nil

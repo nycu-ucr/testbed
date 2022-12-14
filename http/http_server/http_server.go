@@ -11,8 +11,9 @@ import (
 
 	"github.com/nycu-ucr/gonet/http"
 	"github.com/nycu-ucr/net/http2"
-	"github.com/nycu-ucr/net/http2/onvm2c"
-	"github.com/nycu-ucr/onvmpoller"
+	"github.com/nycu-ucr/net/http2/h2c"
+
+	// "github.com/nycu-ucr/onvmpoller"
 
 	"github.com/sirupsen/logrus"
 )
@@ -32,15 +33,15 @@ func checkErr(err error) {
 }
 
 func main() {
-	if USE_ONVM {
-		go func() {
-			time.Sleep(30 * time.Second)
-			onvmpoller.CloseONVM()
-			os.Exit(1)
-		}()
-		defer onvmpoller.CloseONVM()
-	}
-	onvmpoller.SetLocalAddress(IP)
+	// if USE_ONVM {
+	// 	go func() {
+	// 		time.Sleep(30 * time.Second)
+	// 		onvmpoller.CloseONVM()
+	// 		os.Exit(1)
+	// 	}()
+	// 	defer onvmpoller.CloseONVM()
+	// }
+	// onvmpoller.SetLocalAddress(IP)
 
 	fmt.Printf("Server started")
 	logger.SetLogLevel(logrus.TraceLevel)
@@ -57,7 +58,7 @@ func main() {
 func H2CServerUpgrade(handler http.Handler) *http.Server {
 	h2s := &http2.Server{
 		// TODO: extends the idle time after re-use openapi client
-		IdleTimeout: 1 * time.Millisecond,
+		IdleTimeout: 10 * time.Second,
 	}
 
 	// handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -65,9 +66,10 @@ func H2CServerUpgrade(handler http.Handler) *http.Server {
 	// })
 
 	server := &http.Server{
-		Addr:    host,
-		Handler: onvm2c.NewHandler(handler, h2s),
-		// Handler: h2c.NewHandler(handler, h2s),
+		USING_ONVM_SOCKET: false,
+		Addr:              host,
+		Handler:           h2c.NewHandler(handler, h2s),
+		// Handler:           onvm2c.NewHandler(handler, h2s),
 	}
 
 	return server

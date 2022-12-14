@@ -15,7 +15,7 @@ import (
 
 // Find all users
 func GetUser(c *gin.Context) {
-	logger.ServerLog.Info("Handle GetUser")
+	// logger.ServerLog.Info("Handle GetUser")
 
 	req := httpwrapper.NewRequest(c.Request, nil)
 	if id, exists := c.Params.Get("id"); exists {
@@ -28,7 +28,7 @@ func GetUser(c *gin.Context) {
 
 // Create a new user
 func PostUser(c *gin.Context) {
-	logger.ServerLog.Info("Handle PostUser")
+	// logger.ServerLog.Info("Handle PostUser")
 
 	user := context.User{}
 	err := c.ShouldBindJSON(&user)
@@ -45,7 +45,7 @@ func PostUser(c *gin.Context) {
 
 // Update the user information
 func PutUser(c *gin.Context) {
-	logger.ServerLog.Info("Handle PutUser")
+	// logger.ServerLog.Info("Handle PutUser")
 
 	user := context.User{}
 	err := c.ShouldBindJSON(&user)
@@ -62,7 +62,7 @@ func PutUser(c *gin.Context) {
 
 // Delete the user
 func DeleteUser(c *gin.Context) {
-	logger.ServerLog.Info("Handle DeleteUser")
+	// logger.ServerLog.Info("Handle DeleteUser")
 
 	req := httpwrapper.NewRequest(c.Request, nil)
 	if id, exists := c.Params.Get("id"); exists {

@@ -14,7 +14,7 @@ import (
 const (
 	addr        = "127.0.0.3"
 	port        = 8591
-	CLIENT_NUM  = 50
+	CLIENT_NUM  = 500
 	MSG_SIZE    = 8192
 	RECORD_DATA = false
 )
@@ -76,7 +76,7 @@ func calculate(wg *sync.WaitGroup, performance chan float64) {
 	}
 
 	if RECORD_DATA {
-		f, err := os.OpenFile("/home/hstsai/onvm/result/total.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 6666)
+		f, err := os.OpenFile("/home/johnson/onvm/result/total.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 6666)
 		defer f.Close()
 
 		if err != nil {
@@ -120,7 +120,7 @@ func calculateWrite(wg *sync.WaitGroup, performanceWrite chan float64) {
 	}
 
 	if RECORD_DATA {
-		f, err := os.OpenFile("/home/hstsai/onvm/result/write.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 6666)
+		f, err := os.OpenFile("/home/johnson/onvm/result/write.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 6666)
 		defer f.Close()
 
 		if err != nil {
@@ -164,7 +164,7 @@ func calculateRead(wg *sync.WaitGroup, performanceRead chan float64) {
 	}
 
 	if RECORD_DATA {
-		f, err := os.OpenFile("/home/hstsai/onvm/result/read.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 6666)
+		f, err := os.OpenFile("/home/johnson/onvm/result/read.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 6666)
 		defer f.Close()
 
 		if err != nil {
