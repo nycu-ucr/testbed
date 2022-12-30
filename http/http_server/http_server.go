@@ -12,9 +12,7 @@ import (
 	"github.com/nycu-ucr/gonet/http"
 	"github.com/nycu-ucr/net/http2"
 	"github.com/nycu-ucr/net/http2/h2c"
-
-	// "github.com/nycu-ucr/onvmpoller"
-
+	"github.com/nycu-ucr/onvmpoller"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,15 +31,15 @@ func checkErr(err error) {
 }
 
 func main() {
-	// if USE_ONVM {
-	// 	go func() {
-	// 		time.Sleep(30 * time.Second)
-	// 		onvmpoller.CloseONVM()
-	// 		os.Exit(1)
-	// 	}()
-	// 	defer onvmpoller.CloseONVM()
-	// }
-	// onvmpoller.SetLocalAddress(IP)
+	if USE_ONVM {
+		go func() {
+			time.Sleep(30 * time.Second)
+			onvmpoller.CloseONVM()
+			os.Exit(1)
+		}()
+		defer onvmpoller.CloseONVM()
+	}
+	onvmpoller.SetLocalAddress(IP)
 
 	fmt.Printf("Server started")
 	logger.SetLogLevel(logrus.TraceLevel)
@@ -69,7 +67,7 @@ func H2CServerUpgrade(handler http.Handler) *http.Server {
 		USING_ONVM_SOCKET: false,
 		Addr:              host,
 		Handler:           h2c.NewHandler(handler, h2s),
-		// Handler:           onvm2c.NewHandler(handler, h2s),
+		// Handler: onvm2c.NewHandler(handler, h2s),
 	}
 
 	return server

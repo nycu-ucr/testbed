@@ -61,7 +61,7 @@ func GetUserInformationProcedure(id string) (context.Users, *httpwrapper.Problem
 
 func HandlePostUser(user *context.User) *httpwrapper.Response {
 	context.AddUserToUserPool(user)
-	logger.ServerLog.Infof("Add user: %+v", *user)
+	// logger.ServerLog.Infof("Add user: %+v", *user)
 	return httpwrapper.NewResponse(http.StatusOK, nil, user)
 }
 

@@ -34,7 +34,7 @@ func PostUser(c *gin.Context) {
 	err := c.ShouldBindJSON(&user)
 
 	if err != nil {
-		logger.ServerLog.Errorf("Error: %+v", err)
+		logger.ServerLog.Errorf("PostUser Error: %+v", err)
 		c.JSON(http.StatusNotAcceptable, "Error : "+err.Error())
 		return
 	} else {
