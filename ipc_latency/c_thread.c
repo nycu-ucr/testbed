@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <time.h>
 
-#define TIMES 1
+#define TIMES 20
 
 typedef struct four_tuple {
     unsigned int src_address;
@@ -17,10 +17,12 @@ typedef struct channel_data {
     int payload_len;
     int *pointer;
     FourTuple f;
+    long time_;
     
 } ChannelData;
 
 int pipefd[2];
+long latency[TIMES];
 
 void *producer(void *arg) {
     FourTuple f = {2130706433, 2130706434, 65530, 65531};
@@ -29,7 +31,7 @@ void *producer(void *arg) {
 
     for (int x=0; x<TIMES; ++x) {
         clock_gettime(CLOCK_MONOTONIC, &ts);
-        printf("%d: Producer write data: %ld (ns)\n", x, ts.tv_nsec);
+        txdata.time_ = ts.tv_nsec;
         write(pipefd[1], &txdata, sizeof(txdata));
     }
 
@@ -43,7 +45,7 @@ void *consumer(void *arg) {
     for (int x=0; x<TIMES; ++x) {
         read(pipefd[0], &rxdata, sizeof(rxdata));
         clock_gettime(CLOCK_MONOTONIC, &ts);
-        printf("%d: Consumer read data: %ld (ns)\n", x, ts.tv_nsec);
+        latency[x] = ts.tv_nsec - rxdata.time_;
     }
 
     pthread_exit(NULL);
@@ -67,15 +69,8 @@ int main() {
 
     close(pipefd[0]);
     close(pipefd[1]);
-}
 
-/*
-345956345 - 345794707 = 161638
-697534762 - 697369907 = 164855
-697644064 - 697529402 = 114662
-697534762 - 697369907 = 164855
-697594956 - 697494481 = 100475
-485235521 - 485065880 = 169641
-796588012 - 796417337 = 170675
-92555944 - 92383196   = 172748
-*/
+    for(int x=0; x < TIMES; ++x) {
+        printf("%2d: %ld (ns)\n", x+1, latency[x]);
+    }
+}
