@@ -48,7 +48,11 @@ void server() {
 
     for (int x=0; x<TIMES; ++x) {
         read(client_sock, &rxdata, sizeof(rxdata));
+
         clock_gettime(CLOCK_MONOTONIC, &ts);
+        
+        write(client_sock, &rxdata, sizeof(rxdata));
+        
         latency[x] = ts.tv_nsec - rxdata.time_;
     }
 
@@ -60,7 +64,7 @@ void client() {
     struct sockaddr_in server_address; memset(&server_address, 0, sizeof(struct sockaddr_in));
     int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     ChannelData txdata;
-    struct timespec ts;
+    struct timespec start, end;
 
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(port);
@@ -69,9 +73,15 @@ void client() {
     connect(sock, (const struct sockaddr *)&server_address, sizeof(struct sockaddr_in));
 
     for (int x=0; x<TIMES; ++x) {
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-        txdata.time_ = ts.tv_nsec;
+        clock_gettime(CLOCK_MONOTONIC, &start);
+        txdata.time_ = start.tv_nsec;
+
         write(sock, &txdata, sizeof(txdata));
+        read(sock, &txdata, sizeof(txdata));
+        
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        
+        latency[x] = end.tv_nsec - start.tv_nsec;  // Round-Trip
     }
     
     close(sock);
@@ -81,13 +91,14 @@ int main(int argc, char *argv[]) {
     if (*(argv[1]) == 's') {
         server();
 
-        u_int64_t s = 0;
-        for(int x=0; x < TIMES; ++x) {
-            s += latency[x];
-            printf("%2d: %ld (ns)\n", x+1, latency[x]);
-        }
-        printf("Avg. %ld (ns)\n", s/TIMES);
     } else {
         client();
     }
+
+    u_int64_t s = 0;
+    for(int x=0; x < TIMES; ++x) {
+        s += latency[x];
+        printf("%2d: %ld (ns)\n", x+1, latency[x]);
+    }
+    printf("Avg. %ld (ns)\n", s/TIMES);
 }
