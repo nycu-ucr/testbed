@@ -8,7 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define TIMES 20
+#define TIMES 10
 
 typedef struct four_tuple {
     unsigned int src_address;
@@ -27,7 +27,7 @@ typedef struct channel_data {
 } ChannelData;
 
 long latency[TIMES];
-const u_int16_t port = 50011;
+const u_int16_t port = 50010;
 
 void server() {
     struct sockaddr_in server_address; memset(&server_address, 0, sizeof(struct sockaddr_in));
