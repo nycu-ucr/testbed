@@ -7,7 +7,7 @@ require (
 	github.com/nycu-ucr/gin v0.0.0-20221108140334-9ba2d17cede5
 	github.com/nycu-ucr/gonet v0.0.0-20221206181427-d67da1e7556c
 	github.com/nycu-ucr/net v0.0.0-20221207182424-b5928edb0062
-	github.com/nycu-ucr/onvmpoller v0.0.0-20221130113043-306c8f5536b1
+	github.com/nycu-ucr/onvmpoller v0.0.0-20221230063330-90e76bd8c5a3
 	github.com/sirupsen/logrus v1.9.0
 )
 
@@ -27,12 +27,10 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/nycu-ucr/sse v0.0.0-20221108140034-8e09fddc7347 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
-	github.com/rakyll/hey v0.1.4 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	golang.org/x/arch v0.1.0 // indirect
 	golang.org/x/crypto v0.3.0 // indirect
-	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect

@@ -1,79 +1,68 @@
 package main
 
 import (
+	"flag"
 	"net"
+	"runtime"
 	"strconv"
+	"sync"
 	"testbed/logger"
+	"time"
+
+	"github.com/nycu-ucr/onvmpoller"
 )
 
 const (
-	addr     = "127.0.0.2"
-	port     = 8591
-	MSG_SIZE = 8192
+	addr       = "127.0.0.2"
+	port       = 8591
+	READ_WRITE = true
 )
 
-func main() {
-	var listener net.Listener
-	var err error
-	src := addr + ":" + strconv.Itoa(port)
+var (
+	msg_size int
+	result   []int64
+)
 
-	/* NF stop signal */
-	// go func() {
-	// 	time.Sleep(30 * time.Second)
-	// 	onvmpoller.CloseONVM()
-	// 	os.Exit(1)
-	// }()
-	// defer onvmpoller.CloseONVM()
-	// ID, _ := onvmpoller.IpToID(addr)
-	// logger.Log.Infof("[ONVM ID]: %d", ID)
-	// listener, err = onvmpoller.ListenONVM("onvm", src)
+func handle_client(client_ID int, conn net.Conn, wg *sync.WaitGroup) {
+	defer wg.Done()
 
-	listener, err = net.Listen("tcp", src)
-
+	buf := make([]byte, msg_size)
+	_, err := conn.Read(buf)
 	if err != nil {
-		logger.Log.Errorln(err.Error())
+		logger.Log.Errorf("Read Error: %+v\n", err)
 	}
-	defer listener.Close()
-	logger.Log.Infof("TCP server start and listening on %s", src)
 
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			logger.Log.Errorf("Some connection error: %s\n", err)
-		}
-
-		go handleConnection(conn)
+	_, err = conn.Write(buf)
+	if err != nil {
+		logger.Log.Errorf("Read error: %+v", err)
 	}
+
+	conn.Close()
 }
 
-func handleConnection(conn net.Conn) {
-	// remoteAddr := conn.RemoteAddr().String()
-	// logger.Log.Infof("Client connected from: " + remoteAddr)
+func main() {
+	runtime.GOMAXPROCS(2)
+	var loop_times int
+	wg := &sync.WaitGroup{}
 
-	// Make a buffer to hold incoming data.
-	buf := make([]byte, MSG_SIZE)
-	for {
-		// Read the incoming connection into the buffer.
-		reqLen, err := conn.Read(buf)
-		if err != nil {
+	flag.IntVar(&msg_size, "m", 64, "Setup Message Size (Default is 64)")
+	flag.IntVar(&loop_times, "lt", 1, "Setup Loop Times (Default is 1)")
+	flag.Parse()
+	logger.Log.Warnf("[MSG_Size: %d][LOOP_NUM: %d]", msg_size, loop_times)
+	wg.Add(loop_times)
+	result = make([]int64, loop_times)
 
-			if err.Error() == "EOF" {
-				// logger.Log.Infof("Disconned from: %s", remoteAddr)
-				break
-			} else {
-				logger.Log.Errorf("Error reading:", err.Error())
-				break
-			}
-		} else {
-			// Send a response back to person contacting us.
-			msg := string(buf[:reqLen])
-			conn.Write([]byte(msg))
+	src := addr + ":" + strconv.Itoa(port)
 
-			// logger.Log.Infof("len: %d, recv:\n%s\n", reqLen, string(buf[:reqLen]))
-			// logger.Log.Infof("len: %d\n", reqLen)
-		}
+	listener, _ := onvmpoller.ListenONVM("onvm", src)
+	// listener, _ := net.Listen("tcp", src)
+
+	for i := 0; i < loop_times; i++ {
+		conn, _ := listener.Accept()
+		go handle_client(i, conn, wg)
 	}
-	// logger.Log.Infof("Client close connection")
-	// Close the connection when you're done with it.
-	conn.Close()
+
+	wg.Wait()
+	logger.Log.Infof("Program End")
+	time.Sleep(10 * time.Second)
 }

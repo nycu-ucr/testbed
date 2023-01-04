@@ -1,246 +1,102 @@
 package main
 
 import (
-	"encoding/csv"
-	"fmt"
-	"log"
-	"net"
-	"os"
+	"encoding/binary"
+	"flag"
+	"runtime"
+	"strconv"
 	"sync"
 	"testbed/logger"
 	"time"
+
+	"github.com/nycu-ucr/onvmpoller"
 )
 
-const (
-	addr        = "127.0.0.3"
-	port        = 8591
-	CLIENT_NUM  = 500
-	MSG_SIZE    = 8192
-	RECORD_DATA = false
+var (
+	server_addr = "127.0.0.2"
+	server_port = 8591
+	msg_size    int
+	loop_times  int
+	result      []int64
 )
 
 func main() {
-	/* NF stop signal */
-	// go func() {
-	// 	time.Sleep(30 * time.Second)
-	// 	onvmpoller.CloseONVM()
-	// 	os.Exit(1)
-	// }()
-	// defer onvmpoller.CloseONVM()
+	runtime.GOMAXPROCS(2)
 
-	// ID, _ := onvmpoller.IpToID(addr)
-	// logger.Log.Infof("[ONVM ID]: %d", ID)
+	flag.IntVar(&msg_size, "m", 64, "Setup Message Size (Default is 64)")
+	flag.IntVar(&loop_times, "lt", 1, "Setup Loop Times (Default is 1)")
+	flag.Parse()
+	logger.Log.Warnf("[MSG_Size: %d][LOOP_NUM: %d]", msg_size, loop_times)
+	wg := &sync.WaitGroup{}
+	wg.Add(loop_times)
+	result = make([]int64, loop_times)
 
-	/* Wait all client finish */
-	wg := new(sync.WaitGroup)
-	wg.Add(CLIENT_NUM + 3)
+	server := server_addr + ":" + strconv.Itoa(server_port)
 
-	performance := make(chan float64, 10)
-	performanceWrite := make(chan float64, 10)
-	performanceRead := make(chan float64, 10)
-	go calculateRead(wg, performanceWrite)
-	go calculateWrite(wg, performanceRead)
-	go calculate(wg, performance)
-
-	time.Sleep(5 * time.Second)
-	for i := 1; i <= CLIENT_NUM; i++ {
-		go client(i, wg, performance, performanceRead, performanceWrite)
-		time.Sleep(1 * time.Millisecond)
+	for i := 0; i < loop_times; i++ {
+		client(i, server, wg)
 	}
+
 	wg.Wait()
-	time.Sleep(30 * time.Second)
+	logger.Log.Infof("Program End")
+	average := 0
+	for i := 0; i < loop_times; i++ {
+		average = average + int(result[i])
+	}
+	logger.Log.Warnf("Average latency: %d(ns)", average/loop_times)
+	time.Sleep(10 * time.Second)
 }
 
-func calculate(wg *sync.WaitGroup, performance chan float64) {
-	var (
-		count  int
-		result float64
-	)
+func client(client_ID int, server string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	count = 0
-	result = 0
-	array := make([]string, CLIENT_NUM)
 
-	for {
-		select {
-		case p := <-performance:
-			array[count] = fmt.Sprintf("%.8f", p)
-			count++
-			result = result + p
-		default:
-		}
-
-		if count == CLIENT_NUM {
-			break
-		}
-	}
-
-	if RECORD_DATA {
-		f, err := os.OpenFile("/home/johnson/onvm/result/total.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 6666)
-		defer f.Close()
-
-		if err != nil {
-
-			logger.Log.Errorln("failed to open file", err)
-		}
-
-		w := csv.NewWriter(f)
-		defer w.Flush()
-
-		if err := w.Write(array); err != nil {
-			log.Fatalln("error writing record to file", err)
-		}
-	}
-
-	logger.Log.Infof("Average time: %f", result/float64(CLIENT_NUM))
-}
-
-func calculateWrite(wg *sync.WaitGroup, performanceWrite chan float64) {
-	var (
-		count  int
-		result float64
-	)
-	defer wg.Done()
-	count = 0
-	result = 0
-	array := make([]string, CLIENT_NUM)
-
-	for {
-		select {
-		case p := <-performanceWrite:
-			array[count] = fmt.Sprintf("%.8f", p)
-			count++
-			result = result + p
-		default:
-		}
-
-		if count == CLIENT_NUM {
-			break
-		}
-	}
-
-	if RECORD_DATA {
-		f, err := os.OpenFile("/home/johnson/onvm/result/write.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 6666)
-		defer f.Close()
-
-		if err != nil {
-
-			logger.Log.Errorln("failed to open file", err)
-		}
-
-		w := csv.NewWriter(f)
-		defer w.Flush()
-
-		if err := w.Write(array); err != nil {
-			log.Fatalln("error writing record to file", err)
-		}
-	}
-
-	logger.Log.Infof("Average read: %f", result/float64(CLIENT_NUM))
-}
-
-func calculateRead(wg *sync.WaitGroup, performanceRead chan float64) {
-	var (
-		count  int
-		result float64
-	)
-	defer wg.Done()
-	count = 0
-	result = 0
-	array := make([]string, CLIENT_NUM)
-
-	for {
-		select {
-		case p := <-performanceRead:
-			array[count] = fmt.Sprintf("%.8f", p)
-			count++
-			result = result + p
-		default:
-		}
-
-		if count == CLIENT_NUM {
-			break
-		}
-	}
-
-	if RECORD_DATA {
-		f, err := os.OpenFile("/home/johnson/onvm/result/read.csv", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 6666)
-		defer f.Close()
-
-		if err != nil {
-
-			logger.Log.Errorln("failed to open file", err)
-		}
-
-		w := csv.NewWriter(f)
-		defer w.Flush()
-
-		if err := w.Write(array); err != nil {
-			log.Fatalln("error writing record to file", err)
-		}
-	}
-
-	logger.Log.Infof("Average write: %f", result/float64(CLIENT_NUM))
-}
-
-func client(num int, wg *sync.WaitGroup, performance chan float64, performanceRead chan float64, performanceWrite chan float64) {
-	defer wg.Done()
-	msg := fmt.Sprintf("[Client + Conn_%d]", num)
-
-	t1 := time.Now()
-	_, tW, tR, err := sendTCP("127.0.0.2:8591", msg)
-	t2 := time.Now()
-
-	t := t2.Sub(t1).Seconds() * 1000
-	performanceRead <- tR
-	performanceWrite <- tW
-	performance <- t
-	// logger.Log.Infof("[Delay] Write=%f, Read=%f", tW, tR)
+	conn, err := onvmpoller.DialONVM("onvm", server)
+	// conn, err := net.Dial("tcp", server)
 
 	if err != nil {
-		logger.Log.Errorln(err.Error())
-	} else {
-		// logger.Log.Infof("[Conn_%d] Recv response: %+v", num, res)
+		println(err.Error())
 	}
+
+	_, err = conn.Write(makeMsg(msg_size))
+	if err != nil {
+		logger.Log.Errorf("Write error: %+v", err)
+	}
+
+	buf := make([]byte, msg_size)
+	_, err = conn.Read(buf)
+	if err != nil {
+		logger.Log.Errorf("Read error: %+v", err)
+	}
+
+	t2 := time.Now().Nanosecond()
+	t1 := parseMsg(buf)
+	result[client_ID] = int64(t2 - int(t1))
+
+	conn.Close()
+	// logger.Log.Infof("[Client %d] Average Roundtrip Latency: %d(ns)", client_ID, result[client_ID])
 }
 
-func sendTCP(addr, msg string) (string, float64, float64, error) {
-	// connect to this socket
-	var conn net.Conn
-	var err error
+func makeMsg(msg_size int) []byte {
+	b := make([]byte, msg_size)
+	v := uint64(time.Now().Nanosecond())
 
-	conn, err = net.Dial("tcp", addr)
-	// conn, err = onvmpoller.DialONVM("onvm", addr)
-
-	if err != nil {
-		return "", 0.0, 0.0, err
+	for i := 0; i < 8; i++ {
+		b[0] = byte(v >> 56)
+		b[1] = byte(v >> 48)
+		b[2] = byte(v >> 40)
+		b[3] = byte(v >> 32)
+		b[4] = byte(v >> 24)
+		b[5] = byte(v >> 16)
+		b[6] = byte(v >> 8)
+		b[7] = byte(v)
+	}
+	for j := 8; j < msg_size; j++ {
+		b[j] = 87
 	}
 
-	defer conn.Close()
+	return b
+}
 
-	bs := make([]byte, MSG_SIZE)
-
-	BIG_MSG := make([]byte, MSG_SIZE)
-	for i := range BIG_MSG {
-		BIG_MSG[i] = 87
-	}
-
-	t1 := time.Now()
-	conn.Write(BIG_MSG)
-	t2 := time.Now()
-	length, err := conn.Read(bs)
-	t3 := time.Now()
-	tW := t2.Sub(t1).Seconds() * 1000
-	tR := t3.Sub(t2).Seconds() * 1000
-
-	// if string(bs) == string(BIG_MSG) {
-	// 	logger.Log.Warnf("=====EQUAL=====")
-	// }
-
-	if err != nil {
-		return "", tW, tR, err
-	} else {
-		// return "", tW, tR, err
-		return string(bs[:length]), tW, tR, err
-	}
+func parseMsg(b []byte) uint64 {
+	return binary.BigEndian.Uint64(b[0:8])
 }
