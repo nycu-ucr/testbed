@@ -1,6 +1,6 @@
 module testbed
 
-go 1.18
+go 1.19
 
 require (
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
@@ -9,6 +9,7 @@ require (
 	github.com/nycu-ucr/net v0.0.0-20221207182424-b5928edb0062
 	github.com/nycu-ucr/onvmpoller v0.0.0-20221230063330-90e76bd8c5a3
 	github.com/sirupsen/logrus v1.9.0
+	gonum.org/v1/gonum v0.12.0
 )
 
 require (
@@ -31,6 +32,7 @@ require (
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	golang.org/x/arch v0.1.0 // indirect
 	golang.org/x/crypto v0.3.0 // indirect
+	golang.org/x/exp v0.0.0-20230105000112-eab7a2c85304 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect

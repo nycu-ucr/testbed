@@ -1,14 +1,14 @@
 package main
 
 import (
+	"encoding/binary"
 	"flag"
+	"net"
 	"runtime"
 	"strconv"
 	"sync"
 	"testbed/logger"
 	"time"
-
-	"github.com/nycu-ucr/onvmpoller"
 )
 
 var (
@@ -17,6 +17,10 @@ var (
 	msg_size    int
 	loop_times  int
 	result      []int64
+)
+
+const (
+	CLIENT_LOOP_TIMES = 1000
 )
 
 func main() {
@@ -31,17 +35,20 @@ func main() {
 
 	server := server_addr + ":" + strconv.Itoa(server_port)
 
+	// t := time.Now()
 	for i := 0; i < loop_times; i++ {
 		go client(i, server, wg)
 	}
 
 	wg.Wait()
+	// total_latency := time.Since(t).Nanoseconds()
 	logger.Log.Infof("Program End")
-	total := 0
+	total := int64(0)
 	for i := 0; i < loop_times; i++ {
-		total = total + int(result[i])
+		total = total + result[i]
 	}
-	logger.Log.Warnf("Total roundtrip count: %d/s", total)
+	logger.Log.Warnf("Average roundtrip latency: %d(ns)", total/int64(loop_times))
+	// logger.Log.Warnf("Total time: %d(ns)", total_latency)
 	time.Sleep(10 * time.Second)
 
 	// onvmpoller.CloseONVM()
@@ -50,14 +57,20 @@ func main() {
 func client(client_ID int, server string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	conn, err := onvmpoller.DialONVM("onvm", server)
-	// conn, err := net.Dial("tcp", server)
+	// conn, err := onvmpoller.DialONVM("onvm", server)
+	conn, err := net.Dial("tcp", server)
 	if err != nil {
 		println(err.Error())
 	}
 
+	// arrival_distribution := distuv.Poisson{
+	// 	Lambda: 2.0,
+	// 	Src:    rand.NewSource(uint64(time.Now().UnixNano())),
+	// }
+
 	start := time.Now()
-	interval := start.Add(1 * time.Second)
+	interval := start.Add(10 * time.Second)
+	roundtrip := int64(0)
 	a_size := 0
 	loopNum := 0
 
@@ -71,6 +84,8 @@ func client(client_ID int, server string, wg *sync.WaitGroup) {
 
 		buf := make([]byte, msg_size)
 		_, err = conn.Read(buf)
+		t2 := time.Now().UnixNano()
+		t1 := parseMsg(buf)
 		if err != nil {
 			logger.Log.Errorf("Read error: %+v", err)
 			break
@@ -81,17 +96,28 @@ func client(client_ID int, server string, wg *sync.WaitGroup) {
 		if time.Now().After(interval) {
 			break
 		}
+		roundtrip = roundtrip + (int64(t2) - int64(t1))
+		// logger.Log.Infof("delay: %d", (int64(t2) - int64(t1)))
+		// time.Sleep((time.Duration(arrival_distribution.Rand()) + 20) * time.Microsecond)
+		// time.Sleep(10 * time.Millisecond)
+		// ts := time.Now()
+		// for a := 0; a < 100000; a++ {
+
+		// }
+		// te := time.Since(ts).Nanoseconds()
+		// logger.Log.Infof("for loop time: %d(ns)", te)
 	}
 
 	conn.Close()
 
-	result[client_ID] = int64(loopNum)
-	logger.Log.Infof("[Client %d]Roundtrip count: %d/s", client_ID, loopNum)
+	result[client_ID] = roundtrip / int64(loopNum)
+	logger.Log.Infof("Loop num: %d", loopNum)
+	logger.Log.Infof("[Client %d]Roundtrip latency: %d(ns)", client_ID, roundtrip/int64(loopNum))
 }
 
 func makeMsg(msg_size int) []byte {
 	b := make([]byte, msg_size)
-	v := uint64(time.Now().Nanosecond())
+	v := uint64(time.Now().UnixNano())
 
 	for i := 0; i < 8; i++ {
 		b[0] = byte(v >> 56)
@@ -108,4 +134,8 @@ func makeMsg(msg_size int) []byte {
 	}
 
 	return b
+}
+
+func parseMsg(b []byte) uint64 {
+	return binary.BigEndian.Uint64(b[0:8])
 }

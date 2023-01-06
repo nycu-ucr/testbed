@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"flag"
+	"math"
 	"runtime"
 	"strconv"
 	"sync"
@@ -20,6 +21,10 @@ var (
 	result      []int64
 )
 
+const (
+	THREAD_NUM = 10
+)
+
 func main() {
 	runtime.GOMAXPROCS(2)
 
@@ -28,22 +33,31 @@ func main() {
 	flag.Parse()
 	logger.Log.Warnf("[MSG_Size: %d][LOOP_NUM: %d]", msg_size, loop_times)
 	wg := &sync.WaitGroup{}
-	wg.Add(loop_times)
-	result = make([]int64, loop_times)
+	wg.Add(loop_times * THREAD_NUM)
+	result = make([]int64, loop_times*THREAD_NUM)
 
 	server := server_addr + ":" + strconv.Itoa(server_port)
 
-	for i := 0; i < loop_times; i++ {
-		client(i, server, wg)
+	for t := 0; t < THREAD_NUM; t++ {
+		start := loop_times * t
+		end := loop_times * (t + 1)
+		go func() {
+			for i := start; i < end; i++ {
+				client(i, server, wg)
+			}
+		}()
 	}
 
 	wg.Wait()
 	logger.Log.Infof("Program End")
 	average := 0
-	for i := 0; i < loop_times; i++ {
+	for i := 0; i < loop_times*THREAD_NUM; i++ {
 		average = average + int(result[i])
 	}
-	logger.Log.Warnf("Average latency: %d(ns)", average/loop_times)
+	l := average / (loop_times * THREAD_NUM) // ns
+	logger.Log.Warnf("Average latency: %d(ns)", l)
+	MBs := float32(math.Pow(10, 9)) / float32(l) * float32(msg_size) / float32(math.Pow(10, 6))
+	logger.Log.Warnf("Average throughput: %f MB/s", MBs*2)
 	time.Sleep(10 * time.Second)
 }
 
@@ -68,9 +82,9 @@ func client(client_ID int, server string, wg *sync.WaitGroup) {
 		logger.Log.Errorf("Read error: %+v", err)
 	}
 
-	t2 := time.Now().Nanosecond()
+	t2 := time.Now().UnixNano()
 	t1 := parseMsg(buf)
-	result[client_ID] = int64(t2 - int(t1))
+	result[client_ID] = t2 - int64(t1)
 
 	conn.Close()
 	// logger.Log.Infof("[Client %d] Average Roundtrip Latency: %d(ns)", client_ID, result[client_ID])
@@ -78,7 +92,7 @@ func client(client_ID int, server string, wg *sync.WaitGroup) {
 
 func makeMsg(msg_size int) []byte {
 	b := make([]byte, msg_size)
-	v := uint64(time.Now().Nanosecond())
+	v := uint64(time.Now().UnixNano())
 
 	for i := 0; i < 8; i++ {
 		b[0] = byte(v >> 56)

@@ -16,6 +16,7 @@ const (
 	addr       = "127.0.0.2"
 	port       = 8591
 	READ_WRITE = true
+	THREAD_NUM = 10
 )
 
 var (
@@ -49,7 +50,7 @@ func main() {
 	flag.IntVar(&loop_times, "lt", 1, "Setup Loop Times (Default is 1)")
 	flag.Parse()
 	logger.Log.Warnf("[MSG_Size: %d][LOOP_NUM: %d]", msg_size, loop_times)
-	wg.Add(loop_times)
+	wg.Add(loop_times * THREAD_NUM)
 	result = make([]int64, loop_times)
 
 	src := addr + ":" + strconv.Itoa(port)
@@ -57,7 +58,7 @@ func main() {
 	listener, _ := onvmpoller.ListenONVM("onvm", src)
 	// listener, _ := net.Listen("tcp", src)
 
-	for i := 0; i < loop_times; i++ {
+	for i := 0; i < loop_times*THREAD_NUM; i++ {
 		conn, _ := listener.Accept()
 		go handle_client(i, conn, wg)
 	}
