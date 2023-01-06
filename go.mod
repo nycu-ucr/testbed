@@ -7,9 +7,8 @@ require (
 	github.com/nycu-ucr/gin v0.0.0-20221108140334-9ba2d17cede5
 	github.com/nycu-ucr/gonet v0.0.0-20221206181427-d67da1e7556c
 	github.com/nycu-ucr/net v0.0.0-20221207182424-b5928edb0062
-	github.com/nycu-ucr/onvmpoller v0.0.0-20221230063330-90e76bd8c5a3
+	github.com/nycu-ucr/onvmpoller v0.0.0-20230106082327-688bb51dd670
 	github.com/sirupsen/logrus v1.9.0
-	gonum.org/v1/gonum v0.12.0
 )
 
 require (
@@ -20,6 +19,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.11.1 // indirect
 	github.com/goccy/go-json v0.9.11 // indirect
+	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.1 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
@@ -32,7 +32,6 @@ require (
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	golang.org/x/arch v0.1.0 // indirect
 	golang.org/x/crypto v0.3.0 // indirect
-	golang.org/x/exp v0.0.0-20230105000112-eab7a2c85304 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
