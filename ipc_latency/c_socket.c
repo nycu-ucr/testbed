@@ -8,7 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define TIMES 10
+#define TIMES 1000
 
 typedef struct four_tuple {
     unsigned int src_address;
@@ -28,6 +28,13 @@ typedef struct channel_data {
 
 long latency[TIMES];
 const u_int16_t port = 50010;
+
+char *make_msg(int size) {
+    char *ptr = (char *) malloc(sizeof(char) * size);
+    memset(ptr, size, 'x');
+
+    return ptr;
+}
 
 void server() {
     struct sockaddr_in server_address; memset(&server_address, 0, sizeof(struct sockaddr_in));
@@ -96,9 +103,16 @@ int main(int argc, char *argv[]) {
     }
 
     u_int64_t s = 0;
+    FILE *fp = fopen("latency.csv", "w");
     for(int x=0; x < TIMES; ++x) {
         s += latency[x];
+        if (x != TIMES-1) {
+            fprintf(fp, "%ld,", latency[x]);
+        } else {
+            fprintf(fp, "%ld", latency[x]);
+        }
         printf("%2d: %ld (ns)\n", x+1, latency[x]);
     }
+    fclose(fp);
     printf("Avg. %ld (ns)\n", s/TIMES);
 }
