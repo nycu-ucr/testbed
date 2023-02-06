@@ -31,14 +31,14 @@ func checkErr(err error) {
 }
 
 func main() {
-	if USE_ONVM {
-		go func() {
-			time.Sleep(30 * time.Second)
-			onvmpoller.CloseONVM()
-			os.Exit(1)
-		}()
-		defer onvmpoller.CloseONVM()
-	}
+	// if USE_ONVM {
+	// 	go func() {
+	// 		time.Sleep(30 * time.Second)
+	// 		onvmpoller.CloseONVM()
+	// 		os.Exit(1)
+	// 	}()
+	// 	defer onvmpoller.CloseONVM()
+	// }
 	onvmpoller.SetLocalAddress(IP)
 
 	fmt.Printf("Server started")
