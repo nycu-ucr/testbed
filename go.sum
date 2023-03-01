@@ -1,3 +1,5 @@
+github.com/alphadose/zenq/v2 v2.8.2 h1:NfFFPkh0NVO8BSc2aDOtQvnpT27B1MtudyQ/n/7iWlg=
+github.com/alphadose/zenq/v2 v2.8.2/go.mod h1:rA5DlSzkOaSb0jArMjiZ3N4m0CwBf9ZgmNyB8Qt5XlM=
 github.com/antonfisher/nested-logrus-formatter v1.3.1 h1:NFJIr+pzwv5QLHTPyKz9UMEoHck02Q9L0FP13b/xSbQ=
 github.com/antonfisher/nested-logrus-formatter v1.3.1/go.mod h1:6WTfyWFkBc9+zyBaKIqRrg/KwMqBbodBjgbHjDz7zjA=
 github.com/bytedance/sonic v1.5.0 h1:XWdTi8bwPgxIML+eNV1IwNuTROK6EUrQ65ey8yd6fRQ=
@@ -54,8 +56,8 @@ github.com/nycu-ucr/gonet v0.0.0-20221206181427-d67da1e7556c h1:d4Zn2xCzW0XimChJ
 github.com/nycu-ucr/gonet v0.0.0-20221206181427-d67da1e7556c/go.mod h1:Pv42t+Q6836pXU3n4sT9sU0Tu+lSyZl6pOQPdVN6exs=
 github.com/nycu-ucr/net v0.0.0-20221207182424-b5928edb0062 h1:sqta9c+owfQDBeIpwCw7hNIZdX2RQJP6Qus/TriFUTI=
 github.com/nycu-ucr/net v0.0.0-20221207182424-b5928edb0062/go.mod h1:dROBY3Es0LYme/C+B/r9k5MaImufULqu8eSUzF95mg8=
-github.com/nycu-ucr/onvmpoller v0.0.0-20230106082327-688bb51dd670 h1:vYIJE8kEM0hDkamV1et9G3yU9u/Av/WJ3hP3GGa3ahs=
-github.com/nycu-ucr/onvmpoller v0.0.0-20230106082327-688bb51dd670/go.mod h1:KGOJFB22ziiaSu3FEpKZLBmwwbH2XIvcI7AigdWRxNU=
+github.com/nycu-ucr/onvmpoller v0.0.0-20230126132442-ae82155e21db h1:EZR82uxohuE7Gn848pzGLMZENeyOatJUZc1takgfXnU=
+github.com/nycu-ucr/onvmpoller v0.0.0-20230126132442-ae82155e21db/go.mod h1:Q7PZIoXyauXBgTedhyclmtDKLTbX4asUaHKo5s2+3zY=
 github.com/nycu-ucr/sse v0.0.0-20221108140034-8e09fddc7347 h1:TTevBy56sviIo1sQXxqzGOWVg8EprP+cDIdbZgB0vu8=
 github.com/nycu-ucr/sse v0.0.0-20221108140034-8e09fddc7347/go.mod h1:cTHuRZqz4zKejBiZsJj4N2oeGFw3XE2z2QzX+9/gJvs=
 github.com/pelletier/go-toml/v2 v2.0.6 h1:nrzqCb7j9cDFj2coyLNLaZuJTLjWjlaz6nvTvIwycIU=

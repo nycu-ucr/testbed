@@ -3,12 +3,13 @@ package main
 import (
 	"encoding/binary"
 	"flag"
-	"net"
 	"runtime"
 	"strconv"
 	"sync"
 	"testbed/logger"
 	"time"
+
+	"github.com/nycu-ucr/onvmpoller"
 )
 
 var (
@@ -21,6 +22,7 @@ var (
 
 const (
 	CLIENT_LOOP_TIMES = 1000
+	unix_socket_addr  = "test.sock"
 )
 
 func main() {
@@ -49,7 +51,7 @@ func main() {
 	}
 	logger.Log.Warnf("Average roundtrip latency: %d(ns)", total/int64(loop_times))
 	// logger.Log.Warnf("Total time: %d(ns)", total_latency)
-	time.Sleep(10 * time.Second)
+	// time.Sleep(10 * time.Second)
 
 	// onvmpoller.CloseONVM()
 }
@@ -57,24 +59,26 @@ func main() {
 func client(client_ID int, server string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	// conn, err := onvmpoller.DialONVM("onvm", server)
-	conn, err := net.Dial("tcp", server)
+	conn, err := onvmpoller.DialONVM("onvm", server)
+	// conn, err := net.Dial("tcp", server)
+	// conn, err := net.Dial("unix", unix_socket_addr)
 	if err != nil {
 		println(err.Error())
 	}
+	// time.Sleep(1 * time.Second)
 
 	// arrival_distribution := distuv.Poisson{
 	// 	Lambda: 2.0,
 	// 	Src:    rand.NewSource(uint64(time.Now().UnixNano())),
 	// }
 
-	start := time.Now()
-	interval := start.Add(10 * time.Second)
+	// start := time.Now()
+	// interval := start.Add(1 * time.Second)
 	roundtrip := int64(0)
 	a_size := 0
 	loopNum := 0
 
-	for {
+	for i := 0; i < CLIENT_LOOP_TIMES; i++ {
 		n, err := conn.Write(makeMsg(msg_size))
 		a_size += n
 		if err != nil {
@@ -93,9 +97,9 @@ func client(client_ID int, server string, wg *sync.WaitGroup) {
 
 		loopNum++
 
-		if time.Now().After(interval) {
-			break
-		}
+		// if time.Now().After(interval) {
+		// 	break
+		// }
 		roundtrip = roundtrip + (int64(t2) - int64(t1))
 		// logger.Log.Infof("delay: %d", (int64(t2) - int64(t1)))
 		// time.Sleep((time.Duration(arrival_distribution.Rand()) + 20) * time.Microsecond)
@@ -117,8 +121,12 @@ func client(client_ID int, server string, wg *sync.WaitGroup) {
 
 func makeMsg(msg_size int) []byte {
 	b := make([]byte, msg_size)
-	v := uint64(time.Now().UnixNano())
 
+	for j := 8; j < msg_size; j++ {
+		b[j] = 87
+	}
+
+	v := uint64(time.Now().UnixNano())
 	for i := 0; i < 8; i++ {
 		b[0] = byte(v >> 56)
 		b[1] = byte(v >> 48)
@@ -128,9 +136,6 @@ func makeMsg(msg_size int) []byte {
 		b[5] = byte(v >> 16)
 		b[6] = byte(v >> 8)
 		b[7] = byte(v)
-	}
-	for j := 8; j < msg_size; j++ {
-		b[j] = 87
 	}
 
 	return b

@@ -8,11 +8,14 @@ import (
 	"sync"
 	"testbed/logger"
 	"time"
+
+	"github.com/nycu-ucr/onvmpoller"
 )
 
 const (
-	addr = "127.0.0.2"
-	port = 8591
+	addr             = "127.0.0.2"
+	port             = 8591
+	unix_socket_addr = "test.sock"
 )
 
 var (
@@ -70,8 +73,9 @@ func main() {
 	wg.Add(loop_times)
 
 	src := addr + ":" + strconv.Itoa(port)
-	// listener, _ := onvmpoller.ListenONVM("onvm", src)
-	listener, _ := net.Listen("tcp", src)
+	listener, _ := onvmpoller.ListenONVM("onvm", src)
+	// listener, _ := net.Listen("tcp", src)
+	// listener, _ := net.Listen("unix", unix_socket_addr)
 
 	for i := 0; i < loop_times; i++ {
 		conn, _ := listener.Accept()
@@ -80,6 +84,6 @@ func main() {
 
 	wg.Wait()
 	logger.Log.Infof("Program End")
-	time.Sleep(10 * time.Second)
+	// time.Sleep(10 * time.Second)
 	// onvmpoller.CloseONVM()
 }

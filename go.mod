@@ -7,11 +7,12 @@ require (
 	github.com/nycu-ucr/gin v0.0.0-20221108140334-9ba2d17cede5
 	github.com/nycu-ucr/gonet v0.0.0-20221206181427-d67da1e7556c
 	github.com/nycu-ucr/net v0.0.0-20221207182424-b5928edb0062
-	github.com/nycu-ucr/onvmpoller v0.0.0-20230106082327-688bb51dd670
+	github.com/nycu-ucr/onvmpoller v0.0.0-20230126132442-ae82155e21db
 	github.com/sirupsen/logrus v1.9.0
 )
 
 require (
+	github.com/alphadose/zenq/v2 v2.8.2 // indirect
 	github.com/bytedance/sonic v1.5.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
 	github.com/cornelk/hashmap v1.0.8 // indirect

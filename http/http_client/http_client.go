@@ -273,6 +273,7 @@ func http2PostMultiple(url string) {
 		}
 		ID = ID + 1
 		b, err := json.Marshal(user)
+		logger.Log.Infof("msg_size: %d", len(b))
 
 		t1 := time.Now()
 		resp, err := c.Post(url, "application/json", bytes.NewReader(b))
