@@ -1,0 +1,5 @@
+# IP Address: Service ID
+IPIDMap:
+  127.0.0.2: 1  # Server
+  127.0.0.1: 2  # Client
+  127.0.0.3: 3  # Client 2

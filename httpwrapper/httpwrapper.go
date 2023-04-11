@@ -1,7 +1,8 @@
 package httpwrapper
 
 import (
-	"net/http"
+	"github.com/nycu-ucr/gonet/http"
+	// "net/http"
 	"net/url"
 )
 
