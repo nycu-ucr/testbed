@@ -1,6 +1,9 @@
 # Compile
 make all
 
+# Switch TCP and UDS
+Change USE_TCP and USE_UDS
+
 # Server
 ./io_uring_echo_server 50010
 

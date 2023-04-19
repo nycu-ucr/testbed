@@ -9,13 +9,17 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/un.h>
 
 #include "liburing.h"
 
 #define MAX_CONNECTIONS     4096
-#define MAX_MESSAGE_LEN     1024
+#define MAX_MESSAGE_LEN     64
 #define BUFFERS_COUNT       MAX_CONNECTIONS
 #define ROUNDTRIP_TIMES     1000
+#define USE_TCP             0
+#define USE_UDS             1
+#define UDS_NAME            "/tmp/uds"
 
 void add_socket_read(struct io_uring *ring, int fd, unsigned gid, size_t size, unsigned flags);
 void add_socket_write(struct io_uring *ring, int fd, __u16 bid, size_t size, unsigned flags);
@@ -63,22 +67,36 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    // some variables we need
-    int portno = strtol(argv[1], NULL, 10);
+    fprintf(stderr, "Message size: %d\n", message_size);
 
     // setup socket
-    int client_sock = socket(AF_INET, SOCK_STREAM, 0);
-    struct sockaddr_in serv_addr;
+    #if USE_TCP
+        int portno = strtol(argv[1], NULL, 10);
+        int client_sock = socket(AF_INET, SOCK_STREAM, 0);
+        struct sockaddr_in serv_addr;
 
-    memset(&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(portno);
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
+        memset(&serv_addr, 0, sizeof(serv_addr));
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_port = htons(portno);
+        serv_addr.sin_addr.s_addr = INADDR_ANY;
 
-    if (connect(client_sock, (const struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        perror("Connect failed");
-        exit(1);
-    } 
+        if (connect(client_sock, (const struct sockaddr *) &serv_addr, strlen(serv_addr)) < 0) {
+            perror("Connect failed");
+            exit(1);
+        } 
+    #elif USE_UDS
+        int client_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+        struct sockaddr_un serv_addr;
+
+        memset(&serv_addr, 0, sizeof(struct sockaddr_un));
+        serv_addr.sun_family = AF_UNIX;
+        strcpy(serv_addr.sun_path, UDS_NAME);
+        
+        if (connect(client_sock, (const struct sockaddr *)&serv_addr, sizeof(struct sockaddr_un)) != 0) {
+            perror("Connection failed");
+            exit(1);
+        }
+    #endif
 
     // initialize io_uring
     struct io_uring_params params;

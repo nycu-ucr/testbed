@@ -8,6 +8,7 @@
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <sys/un.h>
 
 #include "liburing.h"
 
@@ -15,6 +16,9 @@
 #define BACKLOG             512
 #define MAX_MESSAGE_LEN     2048
 #define BUFFERS_COUNT       MAX_CONNECTIONS
+#define USE_TCP             0
+#define USE_UDS             1
+#define UDS_NAME            "/tmp/uds"
 
 void add_accept(struct io_uring *ring, int fd, struct sockaddr *client_addr, socklen_t *client_len, unsigned flags);
 void add_socket_read(struct io_uring *ring, int fd, unsigned gid, size_t size, unsigned flags);
@@ -43,31 +47,47 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    // some variables we need
-    int portno = strtol(argv[1], NULL, 10);
-    struct sockaddr_in serv_addr, client_addr;
-    socklen_t client_len = sizeof(client_addr);
+    #if USE_TCP
+        int portno = strtol(argv[1], NULL, 10);
+        struct sockaddr_in serv_addr;
 
-    // setup socket
-    int sock_listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-    const int val = 1;
-    setsockopt(sock_listen_fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
+        // setup socket
+        int sock_listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+        const int val = 1;
+        setsockopt(sock_listen_fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
 
-    memset(&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(portno);
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
+        memset(&serv_addr, 0, sizeof(serv_addr));
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_port = htons(portno);
+        serv_addr.sin_addr.s_addr = INADDR_ANY;
 
-    // bind and listen
-    if (bind(sock_listen_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-        perror("Error binding socket...\n");
-        exit(1);
-    }
-    if (listen(sock_listen_fd, BACKLOG) < 0) {
-        perror("Error listening on socket...\n");
-        exit(1);
-    }
-    printf("io_uring echo server listening for connections on port: %d\n", portno);
+        // bind and listen
+        if (bind(sock_listen_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+            perror("Error binding socket...\n");
+            exit(1);
+        }
+        if (listen(sock_listen_fd, BACKLOG) < 0) {
+            perror("Error listening on socket...\n");
+            exit(1);
+        }
+        printf("io_uring echo server listening for connections on port: %d\n", portno);
+    #elif USE_UDS
+        int sock_listen_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+        struct sockaddr_un serv_addr;
+        
+        memset(&serv_addr, 0, sizeof(struct sockaddr_un));
+        serv_addr.sun_family = AF_UNIX;
+        strcpy(serv_addr.sun_path, UDS_NAME);
+
+        if (bind(sock_listen_fd, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_un)) != 0) {
+            perror("Bind");
+            exit(1);
+        }
+        if (listen(sock_listen_fd, 5) != 0) {
+            perror("Listen");
+            exit(1);
+        }
+    #endif
 
     // initialize io_uring
     struct io_uring_params params;
@@ -110,7 +130,7 @@ int main(int argc, char *argv[]) {
     io_uring_cqe_seen(&ring, cqe);
 
     // add first accept SQE to monitor for new incoming connections
-    add_accept(&ring, sock_listen_fd, (struct sockaddr *)&client_addr, &client_len, 0);
+    add_accept(&ring, sock_listen_fd, NULL, NULL, 0);
 
     // start event loop
     while (1) {
@@ -143,7 +163,7 @@ int main(int argc, char *argv[]) {
                 }
 
                 // new connected client; read data from socket and re-add accept to monitor for new connections
-                add_accept(&ring, sock_listen_fd, (struct sockaddr *)&client_addr, &client_len, 0);
+                add_accept(&ring, sock_listen_fd, NULL, NULL, 0);
             } else if (type == READ) {
                 int bytes_read = cqe->res;
                 int bid = cqe->flags >> 16;
