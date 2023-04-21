@@ -2,13 +2,17 @@ package main
 
 import (
 	"encoding/binary"
+	"encoding/csv"
 	"flag"
-	"net"
+	"log"
+	"os"
 	"runtime"
 	"strconv"
 	"sync"
 	"testbed/logger"
 	"time"
+
+	"github.com/nycu-ucr/onvmpoller"
 )
 
 var (
@@ -76,14 +80,32 @@ func main() {
 	// MBs := float32(math.Pow(10, 9)) / float32(l) * float32(msg_size) / float32(math.Pow(10, 6))
 	// logger.Log.Warnf("Average throughput: %f MB/s", MBs*2)
 	// time.Sleep(10 * time.Second)
+	file, err := os.OpenFile("/home/hstsai/onvm/testbed/analyze/short.csv", os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	writer := csv.NewWriter(file)
+	data := []int64{int64(create_latency), int64(roundtrip_latency), int64(close_latency)}
+	var s []string
+	for _, value := range data {
+		s = append(s, strconv.FormatInt(value, 10))
+	}
+	err = writer.Write(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+	writer.Flush()
+	file.Close()
+
+	time.Sleep(1 * time.Second)
 }
 
 func client(client_ID int, server string, wg *sync.WaitGroup) {
 	defer wg.Done()
-
+	// eop := errors.New("EOP").Error()
 	t1_create := time.Now()
-	// conn, err := onvmpoller.DialONVM("onvm", server)
-	conn, err := net.Dial("tcp", server)
+	conn, err := onvmpoller.DialXIO("onvm", server)
+	// conn, err := net.Dial("tcp", server)
 	// conn, err := net.Dial("unix", unix_socket_addr)
 	t2_create := time.Since(t1_create)
 
@@ -98,9 +120,9 @@ func client(client_ID int, server string, wg *sync.WaitGroup) {
 
 	buf := make([]byte, msg_size)
 	_, err = conn.Read(buf)
-	if err != nil {
-		logger.Log.Errorf("Read error: %+v", err)
-	}
+	// if err != nil && err.Error() != eop {
+	// 	logger.Log.Errorf("Read error: %+v", err)
+	// }
 
 	t2_r := time.Now().UnixNano()
 	t1_r := parseMsg(buf)

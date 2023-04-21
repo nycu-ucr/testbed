@@ -1,13 +1,13 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"net"
 	"runtime"
 	"strconv"
 	"sync"
 	"testbed/logger"
-	"time"
 
 	"github.com/nycu-ucr/onvmpoller"
 )
@@ -27,36 +27,44 @@ func handle_client(client_ID int, conn net.Conn, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	a_size := 0
-	start := time.Now()
+	// start := time.Now()
 	loopNum := 0
+	// logger.Log.Warnf("Remote addr: %s", conn.RemoteAddr().String())
 
+	eop := errors.New("EOP").Error()
 	for {
 		buf := make([]byte, msg_size)
-		n, err := conn.Read(buf)
-		a_size += n
-		if err != nil {
+		nr, err := conn.Read(buf)
+		a_size += nr
+		if err != nil && err.Error() != eop {
 			logger.Log.Errorf("Read Error: %+v\n", err)
 			break
 		}
+		if nr != msg_size {
+			logger.Log.Panicf("Read wrong size: %d", nr)
+		}
 
-		_, err = conn.Write(buf)
+		nw, err := conn.Write(buf)
 		if err != nil {
-			logger.Log.Errorf("Read error: %+v", err)
+			logger.Log.Errorf("Write error: %+v", err)
 			break
+		}
+		if nw != msg_size {
+			logger.Log.Panicf("Write wrong size: %d", nw)
 		}
 
 		loopNum++
 	}
 
-	duration := time.Since(start)
-	MBs := (float64(a_size) / (duration.Seconds() * 1000000))
+	// duration := time.Since(start)
+	// MBs := (float64(a_size) / (duration.Seconds() * 1000000))
 
 	logger.Log.Warnf("[CLIENT_ID: %d]", client_ID)
-	logger.Log.Infof("MB/s: %.3f", MBs)
-	logger.Log.Infof("Loop num: %d", loopNum)
-	logger.Log.Infof("Total read bytes: %d", a_size)
-	logger.Log.Infof("Duration: %d(ns)", duration.Nanoseconds())
-	logger.Log.Infof("Latency: %d(ns)", duration.Nanoseconds()/int64(loopNum))
+	// logger.Log.Infof("MB/s: %.3f", MBs)
+	// logger.Log.Infof("Loop num: %d", loopNum)
+	// logger.Log.Infof("Total read bytes: %d", a_size)
+	// logger.Log.Infof("Duration: %d(ns)", duration.Nanoseconds())
+	// logger.Log.Infof("Latency: %d(ns)", duration.Nanoseconds()/int64(loopNum))
 
 	conn.Close()
 }
@@ -73,12 +81,16 @@ func main() {
 	wg.Add(loop_times)
 
 	src := addr + ":" + strconv.Itoa(port)
-	listener, _ := onvmpoller.ListenONVM("onvm", src)
+	// listener, _ := onvmpoller.ListenONVM("onvm", src)
+	listener, _ := onvmpoller.ListenXIO("onvm", src)
 	// listener, _ := net.Listen("tcp", src)
 	// listener, _ := net.Listen("unix", unix_socket_addr)
 
 	for i := 0; i < loop_times; i++ {
-		conn, _ := listener.Accept()
+		conn, err := listener.Accept()
+		if err != nil {
+			logger.Log.Errorf("listener.Accept() error:%+v", err)
+		}
 		go handle_client(i, conn, wg)
 	}
 

@@ -4,8 +4,11 @@ import (
 	"flag"
 	"net"
 	"runtime"
+	"strconv"
 	"sync"
 	"testbed/logger"
+
+	"github.com/nycu-ucr/onvmpoller"
 )
 
 const (
@@ -23,12 +26,12 @@ var (
 
 func handle_client(client_ID int, conn net.Conn, wg *sync.WaitGroup) {
 	defer wg.Done()
-
+	// eop := errors.New("EOP").Error()
 	buf := make([]byte, msg_size)
 	_, err := conn.Read(buf)
-	if err != nil {
-		logger.Log.Errorf("Read Error: %+v\n", err)
-	}
+	// if err != nil && err.Error() != eop {
+	// 	logger.Log.Errorf("Read Error: %+v\n", err)
+	// }
 
 	_, err = conn.Write(buf)
 	if err != nil {
@@ -50,11 +53,11 @@ func main() {
 	wg.Add(loop_times * THREAD_NUM)
 	result = make([]int64, loop_times)
 
-	// src := addr + ":" + strconv.Itoa(port)
+	src := addr + ":" + strconv.Itoa(port)
 
-	// listener, _ := onvmpoller.ListenONVM("onvm", src)
+	listener, _ := onvmpoller.ListenXIO("onvm", src)
 	// listener, _ := net.Listen("tcp", src)
-	listener, _ := net.Listen("unix", unix_socket_addr)
+	// listener, _ := net.Listen("unix", unix_socket_addr)
 
 	for i := 0; i < loop_times*THREAD_NUM; i++ {
 		conn, _ := listener.Accept()

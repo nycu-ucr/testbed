@@ -2,7 +2,11 @@ package main
 
 import (
 	"encoding/binary"
+	"encoding/csv"
+	"errors"
 	"flag"
+	"log"
+	"os"
 	"runtime"
 	"strconv"
 	"sync"
@@ -51,7 +55,23 @@ func main() {
 	}
 	logger.Log.Warnf("Average roundtrip latency: %d(ns)", total/int64(loop_times))
 	// logger.Log.Warnf("Total time: %d(ns)", total_latency)
-	// time.Sleep(10 * time.Second)
+
+	file, err := os.OpenFile("/home/hstsai/onvm/testbed/analyze/test.csv", os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	writer := csv.NewWriter(file)
+	data := []int64{total / int64(loop_times)}
+	for _, value := range data {
+		err := writer.Write([]string{strconv.FormatInt(value, 10)})
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	writer.Flush()
+	file.Close()
+
+	time.Sleep(1 * time.Second)
 
 	// onvmpoller.CloseONVM()
 }
@@ -59,7 +79,8 @@ func main() {
 func client(client_ID int, server string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	conn, err := onvmpoller.DialONVM("onvm", server)
+	// conn, err := onvmpoller.DialONVM("onvm", server)
+	conn, err := onvmpoller.DialXIO("onvm", server)
 	// conn, err := net.Dial("tcp", server)
 	// conn, err := net.Dial("unix", unix_socket_addr)
 	if err != nil {
@@ -77,22 +98,30 @@ func client(client_ID int, server string, wg *sync.WaitGroup) {
 	roundtrip := int64(0)
 	a_size := 0
 	loopNum := 0
+	// logger.Log.Warnf("Remote addr: %s", conn.RemoteAddr().String())
 
+	eop := errors.New("EOP").Error()
 	for i := 0; i < CLIENT_LOOP_TIMES; i++ {
-		n, err := conn.Write(makeMsg(msg_size))
-		a_size += n
+		nw, err := conn.Write(makeMsg(msg_size))
+		a_size += nw
 		if err != nil {
 			logger.Log.Errorf("Write error: %+v", err)
 			break
 		}
+		if nw != msg_size {
+			logger.Log.Panicf("Write wrong size: %d", nw)
+		}
 
 		buf := make([]byte, msg_size)
-		_, err = conn.Read(buf)
+		nr, err := conn.Read(buf)
 		t2 := time.Now().UnixNano()
 		t1 := parseMsg(buf)
-		if err != nil {
+		if err != nil && err.Error() != eop {
 			logger.Log.Errorf("Read error: %+v", err)
 			break
+		}
+		if nr != msg_size {
+			logger.Log.Panicf("Read wrong size: %d", nr)
 		}
 
 		loopNum++
@@ -115,18 +144,18 @@ func client(client_ID int, server string, wg *sync.WaitGroup) {
 	conn.Close()
 
 	result[client_ID] = roundtrip / int64(loopNum)
-	logger.Log.Infof("Loop num: %d", loopNum)
+	// logger.Log.Infof("Loop num: %d", loopNum)
 	logger.Log.Infof("[Client %d]Roundtrip latency: %d(ns)", client_ID, roundtrip/int64(loopNum))
 }
 
 func makeMsg(msg_size int) []byte {
 	b := make([]byte, msg_size)
 
+	v := uint64(time.Now().UnixNano())
 	for j := 8; j < msg_size; j++ {
 		b[j] = 87
 	}
 
-	v := uint64(time.Now().UnixNano())
 	for i := 0; i < 8; i++ {
 		b[0] = byte(v >> 56)
 		b[1] = byte(v >> 48)
